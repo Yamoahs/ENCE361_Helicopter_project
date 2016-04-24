@@ -1,18 +1,13 @@
-/*
- * altitude.c
- *
- *  Created on: Apr 23, 2016
- *      Author: sya57
- */
-
-
 //*****************************************************************************
 //
-// convert.c - Simple interrupt driven program which samples with ADC0
-//		***  Version 1 - calls API function within ISR ***
+// Altitude.c - Simple interrupt driven program which samples with ADC0 to calculate the height of the helicopter
+//		***  Version 2 - Calculates Reference based on RMS ***
+//
+// Author:  Samuel Yamoah
+// Last modified:	24.4.2016
 //
 //*****************************************************************************
-// Results:
+// Results: 
 //  2 x 1.5V cells = 3.17 V (using voltmeter) = 1023 (saturated),
 //   0V = ~3, 1 x 1.5V cell = ~544, noise level ~+- 2
 //*****************************************************************************
@@ -31,17 +26,18 @@
 #include "drivers/rit128x96x4.h"
 #include "utils/ustdlib.h"
 #include "utils/isqrt.h"
-#include "utils/circBuf.h"
+#include "circBuf.h"
 
 //*****************************************************************************
 // Constants
 //*****************************************************************************
-#define BUF_SIZE 400
-#define SAMPLE_RATE_HZ 4000
+#define BUF_SIZE 800
+#define SAMPLE_RATE_HZ 10000
+#define VOLTAGE_DROP 1000
 
 #define ADC_REF 3000
 #define ADC_MAX 1023
-#define ADC_TO_MILLIS(adc) ((adc) * ADC_REF / ADC_MAX)
+#define ADC_TO_MILLIS(adc) (((adc) * ADC_REF) / ADC_MAX)
 
 //*****************************************************************************
 // Global variables
@@ -60,7 +56,7 @@ SysTickIntHandler(void)
     //
     // Initiate a conversion
     //
-    ADCProcessorTrigger(ADC0_BASE, 3);
+    ADCProcessorTrigger(ADC0_BASE, 3); 
     g_ulSampCnt++;
 }
 
@@ -74,7 +70,7 @@ void
 ADCIntHandler(void)
 {
 	unsigned long ulValue;
-
+	
 	//
 	// Get the single sample from ADC0. (Yes, I know, a function call!!)
 	ADCSequenceDataGet(ADC0_BASE, 3, &ulValue);
@@ -86,7 +82,7 @@ ADCIntHandler(void)
 		g_inBuffer.windex = 0;
 	//
 	// Clean up, clearing the interrupt
-	ADCIntClear(ADC0_BASE, 3);
+	ADCIntClear(ADC0_BASE, 3);                          
 }
 
 //*****************************************************************************
@@ -97,11 +93,11 @@ initClock (void)
 {
   //
   // Set the clock rate. From Section 19.1 in stellaris_peripheral_lib_UG.doc:
-  //  "In order to use the ADC, the PLL must be used; the PLL output will be
+  //  "In order to use the ADC, the PLL must be used; the PLL output will be 
   //  used to create the clock required by the ADC." ADC rate = 8 MHz / 10.
   //  The processor clock rate = 20 MHz.
   SysCtlClockSet(SYSCTL_SYSDIV_10 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN |
-                   SYSCTL_XTAL_8MHZ);
+                   SYSCTL_XTAL_8MHZ);	
   //
   // Set up the period for the SysTick timer.  The SysTick timer period is
   // set as a function of the system clock.
@@ -115,18 +111,18 @@ initClock (void)
   SysTickEnable();
 }
 
-void
+void 
 initADC (void)
 {
   //
   // The ADC0 peripheral must be enabled for configuration and use.
   SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
-
+    
   // Enable sample sequence 3 with a processor signal trigger.  Sequence 3
   // will do a single sample when the processor sends a signal to start the
-  // conversion.
+  // conversion.  
   ADCSequenceConfigure(ADC0_BASE, 3, ADC_TRIGGER_PROCESSOR, 0);
-
+  
   //
   // Configure step 0 on sequence 3.  Sample channel 0 (ADC_CTL_CH0) in
   // single-ended mode (default) and configure the interrupt flag
@@ -137,16 +133,16 @@ initADC (void)
   // conversion using sequence 3 we will only configure step 0.  For more
   // on the ADC sequences and steps, refer to the LM3S1968 datasheet.
   ADCSequenceStepConfigure(ADC0_BASE, 3, 0, ADC_CTL_CH0 | ADC_CTL_IE |
-                             ADC_CTL_END);
-
+                             ADC_CTL_END);    
+                             
   //
   // Since sample sequence 3 is now configured, it must be enabled.
-  ADCSequenceEnable(ADC0_BASE, 3);
-
+  ADCSequenceEnable(ADC0_BASE, 3);     
+  
   //
   // Register the interrupt handler
   ADCIntRegister (ADC0_BASE, 3, ADCIntHandler);
-
+  
   //
   // Enable interrupts for ADC0 sequence 3 (clears any outstanding interrupts)
   ADCIntEnable(ADC0_BASE, 3);
@@ -159,11 +155,26 @@ int calcRMS(int squareVoltage)
 
 }
 
+int calcHeight(int reference, int current)
+{
+	int height;
+	if(reference <= current){
+		height = 0;
+	}
+	else if(VOLTAGE_DROP <=	(reference - current)){
+		height = 100;
+	}
+	else{
+		height = (current * 100)/reference;
+	}
+	return height;
+}
+
 void
 initDisplay (void)
 {
   // intialise the OLED display
-  RIT128x96x4Init(1000000);
+  RIT128x96x4Init(1000000);	
 }
 
 //*****************************************************************************
@@ -174,22 +185,22 @@ initDisplay (void)
 //
 //*****************************************************************************
 void
-displayInfo(int meanVal, int count, int rms, int pk2pk)
+displayInfo(int rms, int pk2pk, int inital, int height)
 {
 	char string[40];
 
-	usprintf(string, "sampled at %5d Hz", SAMPLE_RATE_HZ);
-	RIT128x96x4StringDraw(string, 5, 14, 15);
-	usprintf(string, "Count = %7d", count);
-	RIT128x96x4StringDraw(string, 5, 24, 15);
-	usprintf(string, "Mean value = %5d", meanVal);
-	RIT128x96x4StringDraw(string, 5, 34, 15);
-	usprintf(string, "RMS Voltage = %2d", rms);
+	RIT128x96x4StringDraw("Height sensor", 5, 14, 15);
+	usprintf(string, "RMS Voltage = %3dmV", rms);
 	RIT128x96x4StringDraw(string, 5, 44, 15);
-	usprintf(string, "pk2pk = %2d", pk2pk);
+	usprintf(string, "pk2pk = %3dmV", pk2pk);
 	RIT128x96x4StringDraw(string, 5, 54, 15);
+	usprintf(string, "Init. = %3dmV", inital);
+	RIT128x96x4StringDraw(string, 5, 64, 15);
+	usprintf(string, "Hgt. = %3d%%", height);
+	RIT128x96x4StringDraw(string, 5, 74, 15);
 
 }
+
 
 int
 main(void)
@@ -200,18 +211,23 @@ main(void)
 	int max;
 	int min;
 	int pk2pk;
-	int mean;
 	int current;
-
+	int initalRead = 0; 				// Initial voltage read to calibrate the minimum height of the helicopter
+	int hgt;
+	
 
 	initClock ();
 	initADC ();
 	initDisplay ();
 	initCircBuf (&g_inBuffer, BUF_SIZE);
 
+
+
     //
     // Enable interrupts to the processor.
     IntMasterEnable();
+
+
 
 	while (1)
 	{
@@ -221,7 +237,7 @@ main(void)
 		sum = 0;
 		squareVoltage = 0;
 		max = 0;
-		min = ADC_MAX;
+		min = 1024;
 		for (i = 0; i < BUF_SIZE; i++) {
 			current = readCircBuf (&g_inBuffer);
 			sum = sum + current;
@@ -234,11 +250,13 @@ main(void)
 			}
 		}
 		pk2pk = max - min;
-		//int rms = calcRMS(squareVoltage);
-		mean = (sum/BUF_SIZE);
-		displayInfo(ADC_TO_MILLIS(mean), (int) g_ulSampCnt, ADC_TO_MILLIS(isqrt(squareVoltage/BUF_SIZE)), ADC_TO_MILLIS(pk2pk));
+		int rms = ADC_TO_MILLIS(calcRMS(squareVoltage));
+		pk2pk = ADC_TO_MILLIS(pk2pk);
+		if(initalRead == 0){
+			initalRead = pk2pk;
+		}
+		hgt = calcHeight(initalRead, rms);
+		displayInfo(rms, pk2pk, (int)initalRead, hgt);
 	}
 }
-
-
 
