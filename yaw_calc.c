@@ -34,25 +34,16 @@
 // Constants
 //*****************************************************************************
 #define MAX_24BIT_VAL 0X0FFFFFF
-#define BUF_SIZE 20
 
-
-//*****************************************************************************
-// Buffer type declaration - set of unsigned longs
-//*****************************************************************************
-typedef struct {
-	unsigned int size;	// Number of entries in buffer
-	unsigned int windex;	// index for writing, mod(size)
-	unsigned int rindex;	// index for reading, mod(size)
-	unsigned long *data;	// pointer to the data
-} circBuf_t;
 
 //*****************************************************************************
 // Global variables
 //*****************************************************************************
-static circBuf_t g_inBuffer;		// Buffer of size BUF_SIZE unsigned longs (intervals)
 static volatile unsigned long g_ulIntCntA;	// Monitors interrupts on A
 static volatile unsigned long g_ulIntCntB;	// Monitors interrupts on B
+int currentState;
+int previousState;
+int movement = 0;
 
 //*****************************************************************************
 //
@@ -63,11 +54,16 @@ static volatile unsigned long g_ulIntCntB;	// Monitors interrupts on B
 void
 PinChangeIntHandler (void)
 {
-	static unsigned long ulLastCnt;	// Retains previous value of SysTick counter
-	unsigned long ulSysTickCnt;
+	/*States:
+	 * A 1 = 00
+	 * B 2 = 10
+	 * C 3 = 11
+	 * D 4 = 01
+	 */
+	//static unsigned long ulLastCnt;	// Retains previous value of SysTick counter
+	//unsigned long ulSysTickCnt;
 	unsigned long ulPortValA;
 	unsigned long ulPortValB;
-	long lDiff;
 	
 	// 
 	// Clear the interrupt (documentation recommends doing this early)
@@ -78,19 +74,11 @@ PinChangeIntHandler (void)
 	ulPortValB = GPIOPinRead (GPIO_PORTF_BASE, GPIO_PIN_7);
 	//
 	// Read the SysTick counter value 
-	ulSysTickCnt = SysTickValueGet ();
+	//ulSysTickCnt = SysTickValueGet ();
 	//
 	// Calculate pulse width (at trailing edge only)
 	if (!ulPortValA)
-	{		// end of pulse, so place calculated interval in buffer
-		lDiff = ulLastCnt - ulSysTickCnt;
-		if (lDiff < 0)	// i.e. if the wrap-around has occured between edges
-		   lDiff += MAX_24BIT_VAL;
-		g_inBuffer.data[g_inBuffer.windex] = (unsigned long) lDiff;
-		g_inBuffer.windex++;
-		if (g_inBuffer.windex >= g_inBuffer.size)
-			g_inBuffer.windex = 0;
-
+	{
 		// Count interrupts
 			g_ulIntCntA++;
 	}
@@ -101,7 +89,7 @@ PinChangeIntHandler (void)
 	}
 	//
 	// Prepare for next interrupt
-	ulLastCnt = ulSysTickCnt;
+	//ulLastCnt = ulSysTickCnt;
 
 }
 
@@ -157,23 +145,6 @@ initDisplay (void)
   RIT128x96x4Init(1000000);	
 }
 
-// *******************************************************
-// initCircBuf: Initialise the circBuf instance. Reset both indices to
-// the start of the buffer.  Dynamically allocate and clear the the 
-// memory and return a pointer for the data.  Return NULL if 
-// allocation fails.
-// *******************************************************
-unsigned long *
-initCircBuf (circBuf_t *buffer, unsigned int size)
-{
-	buffer->windex = 0;
-	buffer->rindex = 0;
-	buffer->size = size;
-	buffer->data = 
-        (unsigned long *) calloc (size, sizeof(unsigned long));
-     // Note use of calloc() to clear contents.
-	return buffer->data;
-}
 
 //*****************************************************************************
 //
@@ -181,15 +152,11 @@ initCircBuf (circBuf_t *buffer, unsigned int size)
 //
 //*****************************************************************************
 void
-displayMeanVal (long lMeanVal)
+displayMeanVal (void)
 {
-    char string[30];
-    unsigned long ulClkRate = SysCtlClockGet();
+    //unsigned long ulClkRate = SysCtlClockGet();
 	
-    RIT128x96x4StringDraw ("Monitoring Pin 27", 5, 24, 15);
-    RIT128x96x4StringDraw ("Mean interval = ", 5, 34, 15);
-    sprintf (string, "%8d usec", lMeanVal * 1000000L / ulClkRate);
-    RIT128x96x4StringDraw (string, 5, 44, 15);
+    RIT128x96x4StringDraw ("Monitor Pin 27 & 29", 5, 24, 15);
 }
 
 //*****************************************************************************
@@ -205,19 +172,20 @@ displayIntCnt (void)
    RIT128x96x4StringDraw (string, 5, 54, 15);
    sprintf (string, "Count B = %d", g_ulIntCntB);
    RIT128x96x4StringDraw (string, 5, 64, 15);
+   sprintf (string, "curr State = %d", currentState);
+   RIT128x96x4StringDraw (string, 5, 74, 15);
+   sprintf (string, "prev State = %d", previousState);
+   RIT128x96x4StringDraw (string, 5, 84, 15);
 }
 //*****************************************************************************
 
 int
 main(void)
 {
-	unsigned long sum, *dataPtr;
-	int i;
-	
+
 	initClock ();
 	initPin ();
 	initDisplay ();
-	initCircBuf (&g_inBuffer, BUF_SIZE);
 
 	//
 	// Enable interrupts to the processor.
@@ -228,10 +196,8 @@ main(void)
 		//
 		// Background task: calculate the mean of the intervals in the 
 		//  circular buffer and display it
-		sum = 0ul;
-		for (i = 0, dataPtr = g_inBuffer.data; i < BUF_SIZE; i++, dataPtr++)
-			sum = sum + *dataPtr;
-		displayMeanVal (sum / BUF_SIZE);
+
+		displayMeanVal ();
 		displayIntCnt ();
 	}
 }
