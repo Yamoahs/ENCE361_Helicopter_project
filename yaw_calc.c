@@ -56,9 +56,9 @@ PinChangeIntHandler (void)
 {
 	/*States:
 	 * A 1 = 00
-	 * B 2 = 10
+	 * B 2 = 01
 	 * C 3 = 11
-	 * D 4 = 01
+	 * D 4 = 10
 	 */
 	//static unsigned long ulLastCnt;	// Retains previous value of SysTick counter
 	//unsigned long ulSysTickCnt;
@@ -79,14 +79,41 @@ PinChangeIntHandler (void)
 	// Calculate pulse width (at trailing edge only)
 	if (!ulPortValA)
 	{
+		if (ulPortValB){
+			currentState = 2;
+		}
+		else
+		{
+			currentState = 1;
+		}
 		// Count interrupts
 			g_ulIntCntA++;
 	}
-
-	if (!ulPortValB)
+	else
 	{
+		if (ulPortValB){
+			currentState = 3;
+		}
+		else
+		{
+			currentState = 4;
+		}
+		// Count interrupts
 		g_ulIntCntB++;
 	}
+
+	/*if (!ulPortValB)
+	{
+		if (ulPortValA){
+					currentState = 3;
+				}
+				else
+				{
+					currentState = 2;
+				}
+		g_ulIntCntB++;
+	}*/
+	previousState = currentState;
 	//
 	// Prepare for next interrupt
 	//ulLastCnt = ulSysTickCnt;
@@ -167,7 +194,9 @@ void
 displayIntCnt (void)
 {
    char string[30];
-	
+
+   sprintf (string, "state", currentState);
+   RIT128x96x4StringDraw (string, 5, 44, 15);
    sprintf (string, "Count A = %d", g_ulIntCntA);
    RIT128x96x4StringDraw (string, 5, 54, 15);
    sprintf (string, "Count B = %d", g_ulIntCntB);
