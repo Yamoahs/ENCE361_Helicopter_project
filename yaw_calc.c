@@ -33,6 +33,8 @@
 // Constants
 //*****************************************************************************
 #define MAX_24BIT_VAL 0X0FFFFFF
+#define STATES_PER_SLOT 4
+#define YAW_DEG 360/112
 
 
 //*****************************************************************************
@@ -40,8 +42,8 @@
 //*****************************************************************************
 static volatile unsigned long g_ulIntCntA;	// Monitors interrupts on A
 static volatile unsigned long g_ulIntCntB;	// Monitors interrupts on B
-int currentState;
-int previousState;
+int currentState = 1;
+int previousState = 1;
 int yaw = 0;
 
 //*****************************************************************************
@@ -68,8 +70,7 @@ void yawCalc (void)
 	}
 }
 
-void
-PinChangeIntHandler (void)
+void PinChangeIntHandler (void)
 {
 	/*States:
 	 * A 1 = 00
@@ -177,6 +178,14 @@ initDisplay (void)
   RIT128x96x4Init(1000000);	
 }
 
+int yawToDeg ()
+{
+	int deg = 0;
+	deg = ((yaw/STATES_PER_SLOT) * (YAW_DEG)) % 360;
+
+	return deg;
+}
+
 
 //*****************************************************************************
 //
@@ -196,16 +205,14 @@ displayMeanVal (void)
 // Function to display the interrupt count 
 //*****************************************************************************
 void
-displayIntCnt (void)
+displayIntCnt (int degrees)
 {
    char string[30];
 
-   sprintf (string, "yaw: %3d", yaw);
+   sprintf (string, "yaw: %5d", yaw);
    RIT128x96x4StringDraw (string, 5, 44, 15);
-   sprintf (string, "Count A = %d", g_ulIntCntA);
+   sprintf (string, "Deg = %4d", degrees);
    RIT128x96x4StringDraw (string, 5, 54, 15);
-   sprintf (string, "Count B = %d", g_ulIntCntB);
-   RIT128x96x4StringDraw (string, 5, 64, 15);
    sprintf (string, "curr State = %d", currentState);
    RIT128x96x4StringDraw (string, 5, 74, 15);
    sprintf (string, "prev State = %d", previousState);
@@ -216,6 +223,7 @@ displayIntCnt (void)
 int
 main(void)
 {
+	int degrees = 0;
 
 	initClock ();
 	initPin ();
@@ -227,8 +235,9 @@ main(void)
     
 	while (1)
 	{
+		degrees = yawToDeg();
 		displayMeanVal ();
-		displayIntCnt ();
+		displayIntCnt (degrees);
 	}
 }
 
