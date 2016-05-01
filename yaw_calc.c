@@ -1,18 +1,17 @@
 //*****************************************************************************
 //
-// pulseInrpt.c - Program to monitor the width of pulse in a digital waveform.
+// yaw_calc.c - Program to monitor the change in yaw from two encoders.
 //
-// Author:  P.J. Bones	UCECE
-// Last modified:	17.3.2015
+// Author: 			Samuel Yamoah
+// Date created: 	30.4.2016
+// Last modified:	1.5.2016
 //
 //*****************************************************************************
-// Lab 3 sheet for ENCE361 2012: Step 6. Write an interrupt service routine to 
-// read the SysTick register operating as a decrementing wrap-on-zero counter, 
-// using SysTickValueGet()  for every 0->1  or 1->0  transition on an EVK header 
-// pin (Pin 27 = PF5).  Maintain a circular buffer of size NUM_TICKS
-// with NUM_TICKS = 20, say. Produce a continually updating display 
-// of the mean pulse duration in msec over the contents of the buffer.  
-// Remember that the 24-bit counter value will wrap once it reaches zero.
+// Program checks interrupts on Pin 27, PF5 and Pin 29, PF7 with both rising and
+// falling edge detection. Each channel interrupt is checked against the other
+// channel interrupt to find the rotation state. There are four possible states
+// in which the transitions between states will determine the rotation direction.
+// The yaw is then converted in to degrees and is continuallously displayed.
 //*****************************************************************************
 
 #include "inc/hw_memmap.h"
@@ -43,7 +42,7 @@ static volatile unsigned long g_ulIntCntA;	// Monitors interrupts on A
 static volatile unsigned long g_ulIntCntB;	// Monitors interrupts on B
 int currentState;
 int previousState;
-int movement = 0;
+int yaw = 0;
 
 //*****************************************************************************
 //
@@ -51,6 +50,24 @@ int movement = 0;
 //  the SysTick counter is decrementing.
 //
 //*****************************************************************************
+
+void yawCalc (void)
+{
+	if (previousState == 1 && currentState == 2 || previousState == 2 && currentState == 3
+		|| previousState == 3 && currentState == 4 || previousState == 4 && currentState == 1)
+	{
+		yaw++;
+	}
+	else if (currentState == previousState)
+	{
+		yaw = yaw;
+	}
+	else
+	{
+		yaw--;
+	}
+}
+
 void
 PinChangeIntHandler (void)
 {
@@ -72,6 +89,7 @@ PinChangeIntHandler (void)
 	// Read the pin
 	ulPortValA = GPIOPinRead (GPIO_PORTF_BASE, GPIO_PIN_5);
 	ulPortValB = GPIOPinRead (GPIO_PORTF_BASE, GPIO_PIN_7);
+	previousState = currentState;
 	//
 	// Read the SysTick counter value 
 	//ulSysTickCnt = SysTickValueGet ();
@@ -102,22 +120,7 @@ PinChangeIntHandler (void)
 		g_ulIntCntB++;
 	}
 
-	/*if (!ulPortValB)
-	{
-		if (ulPortValA){
-					currentState = 3;
-				}
-				else
-				{
-					currentState = 2;
-				}
-		g_ulIntCntB++;
-	}*/
-	previousState = currentState;
-	//
-	// Prepare for next interrupt
-	//ulLastCnt = ulSysTickCnt;
-
+	yawCalc();
 }
 
 //*****************************************************************************
@@ -164,6 +167,8 @@ initPin (void)
     IntEnable (INT_GPIOF);	// Note: INT_GPIOF defined in inc/hw_ints.h
 }
 
+
+
 // *******************************************************
 void
 initDisplay (void)
@@ -195,7 +200,7 @@ displayIntCnt (void)
 {
    char string[30];
 
-   sprintf (string, "state", currentState);
+   sprintf (string, "yaw: %3d", yaw);
    RIT128x96x4StringDraw (string, 5, 44, 15);
    sprintf (string, "Count A = %d", g_ulIntCntA);
    RIT128x96x4StringDraw (string, 5, 54, 15);
@@ -222,10 +227,6 @@ main(void)
     
 	while (1)
 	{
-		//
-		// Background task: calculate the mean of the intervals in the 
-		//  circular buffer and display it
-
 		displayMeanVal ();
 		displayIntCnt ();
 	}
