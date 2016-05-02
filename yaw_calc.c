@@ -1,3 +1,10 @@
+/* YAW TO DEREES INTEGER DIVISION BUG FIX - 02/05/16
+*  #define DEGREES 360
+*  #define STATES_ON_DISC 448
+*
+* deg = (yaw * DEGREES + (STATES_ON_DISC / 2)) / STATES_ON_DISC
+*/
+
 //*****************************************************************************
 //
 // yaw_calc.c - Program to monitor the change in yaw from two encoders.
@@ -82,8 +89,8 @@ void PinChangeIntHandler (void)
 	//unsigned long ulSysTickCnt;
 	unsigned long ulPortValA;
 	unsigned long ulPortValB;
-	
-	// 
+
+	//
 	// Clear the interrupt (documentation recommends doing this early)
 	GPIOPinIntClear (GPIO_PORTF_BASE, GPIO_PIN_5 |  GPIO_PIN_7);
 	//
@@ -92,7 +99,7 @@ void PinChangeIntHandler (void)
 	ulPortValB = GPIOPinRead (GPIO_PORTF_BASE, GPIO_PIN_7);
 	previousState = currentState;
 	//
-	// Read the SysTick counter value 
+	// Read the SysTick counter value
 	//ulSysTickCnt = SysTickValueGet ();
 	//
 	// Calculate pulse width (at trailing edge only)
@@ -131,12 +138,12 @@ void
 initClock (void)
 {
   //
-  // Set the clock rate @ 3125000 Hz (minimum possible). The wrap-around 
+  // Set the clock rate @ 3125000 Hz (minimum possible). The wrap-around
   //  period is then 5.36871 sec.
   SysCtlClockSet (SYSCTL_SYSDIV_64 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN |
-                   SYSCTL_XTAL_8MHZ);	
+                   SYSCTL_XTAL_8MHZ);
   //
-  // Set up the period for the SysTick timer to get the maximum span.  
+  // Set up the period for the SysTick timer to get the maximum span.
   SysTickPeriodSet (MAX_24BIT_VAL);
   //
   // Enable SysTick device (no interrupt)
@@ -152,7 +159,7 @@ initPin (void)
     GPIOPortIntRegister (GPIO_PORTF_BASE, PinChangeIntHandler);
     //
     // Enable and configure the port and pin used:  input on PF5: Pin 27
-    SysCtlPeripheralEnable (SYSCTL_PERIPH_GPIOF); 
+    SysCtlPeripheralEnable (SYSCTL_PERIPH_GPIOF);
     GPIOPadConfigSet (GPIO_PORTF_BASE, GPIO_PIN_5, GPIO_STRENGTH_2MA,
        GPIO_PIN_TYPE_STD_WPU);
     GPIOPadConfigSet (GPIO_PORTF_BASE, GPIO_PIN_7, GPIO_STRENGTH_2MA,
@@ -161,8 +168,8 @@ initPin (void)
     // Set up the pin change interrupt (both edges)
     GPIOIntTypeSet (GPIO_PORTF_BASE, GPIO_PIN_5, GPIO_BOTH_EDGES);
     GPIOIntTypeSet (GPIO_PORTF_BASE, GPIO_PIN_7, GPIO_BOTH_EDGES);
-    // 
-    // Enable the pin change interrupt 
+    //
+    // Enable the pin change interrupt
     GPIOPinIntEnable (GPIO_PORTF_BASE, GPIO_PIN_5);
     GPIOPinIntEnable (GPIO_PORTF_BASE, GPIO_PIN_7);
     IntEnable (INT_GPIOF);	// Note: INT_GPIOF defined in inc/hw_ints.h
@@ -175,7 +182,7 @@ void
 initDisplay (void)
 {
   // intialise the OLED display
-  RIT128x96x4Init(1000000);	
+  RIT128x96x4Init(1000000);
 }
 
 int yawToDeg ()
@@ -196,13 +203,13 @@ void
 displayMeanVal (void)
 {
     //unsigned long ulClkRate = SysCtlClockGet();
-	
+
     RIT128x96x4StringDraw ("Monitor Pin 27 & 29", 5, 24, 15);
 }
 
 //*****************************************************************************
 //
-// Function to display the interrupt count 
+// Function to display the interrupt count
 //*****************************************************************************
 void
 displayIntCnt (int degrees)
@@ -232,7 +239,7 @@ main(void)
 	//
 	// Enable interrupts to the processor.
 	IntMasterEnable ();
-    
+
 	while (1)
 	{
 		degrees = yawToDeg();
@@ -240,4 +247,3 @@ main(void)
 		displayIntCnt (degrees);
 	}
 }
-
