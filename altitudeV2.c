@@ -185,7 +185,7 @@ int calcHeight(int reference, int current)
 	//height = ((current - reference) / RATIO_TO_PERCNT); //Difference between current and reference then to %
 	//height = ((reference - current) * 100) / reference; //Ratio of the difference over the reference
 	//height = ((current - reference) / (reference - 1000)) * 100;
-	height = (((current - reference) / (MILLI_VOLT - reference)) * 100);
+	height = (((current - reference)  * 100) / (MILLI_VOLT - reference));
 
 	return height;
 }
