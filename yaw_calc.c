@@ -40,8 +40,10 @@
 // Constants
 //*****************************************************************************
 #define MAX_24BIT_VAL 0X0FFFFFF
-#define STATES_PER_SLOT 4
-#define YAW_DEG 360/112
+#define DEGREES 360
+#define STATES_ON_DISC 448
+//#define STATES_PER_SLOT 4
+//#define YAW_DEG 360/112
 
 
 //*****************************************************************************
@@ -140,7 +142,7 @@ initClock (void)
   //
   // Set the clock rate @ 3125000 Hz (minimum possible). The wrap-around
   //  period is then 5.36871 sec.
-  SysCtlClockSet (SYSCTL_SYSDIV_64 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN |
+  SysCtlClockSet (SYSCTL_SYSDIV_10 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN |
                    SYSCTL_XTAL_8MHZ);
   //
   // Set up the period for the SysTick timer to get the maximum span.
@@ -188,7 +190,7 @@ initDisplay (void)
 int yawToDeg ()
 {
 	int deg = 0;
-	deg = ((yaw/STATES_PER_SLOT) * (YAW_DEG)) % 360;
+	deg = (yaw * DEGREES + (STATES_ON_DISC / 2)) / STATES_ON_DISC;
 
 	return deg;
 }
