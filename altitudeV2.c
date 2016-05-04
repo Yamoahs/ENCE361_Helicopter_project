@@ -1,7 +1,7 @@
 //*****************************************************************************
 //
 // Altitude.c - Simple interrupt driven program which samples with ADC0 to calculate the height of the helicopter
-//		***  Version 2 - Calculates Reference based on RMS ***
+//		***  Version 2 - Calculates Reference based on newHght ***
 //
 // Author:  Samuel Yamoah
 // Last modified:	24.4.2016
@@ -26,12 +26,12 @@
 #include "drivers/rit128x96x4.h"
 #include "utils/ustdlib.h"
 #include "utils/isqrt.h"
-#include "circBuf.h"
+#include "utils/circBuf.h"
 
 //*****************************************************************************
 // Constants
 //*****************************************************************************
-#define BUF_SIZE 800
+#define BUF_SIZE 100
 #define SAMPLE_RATE_HZ 10000
 #define VOLTAGE_DROP 1000
 
@@ -44,6 +44,8 @@
 //*****************************************************************************
 static circBuf_t g_inBuffer;		// Buffer of size BUF_SIZE integers (sample values)
 static unsigned long g_ulSampCnt;	// Counter for the interrupts
+
+int initalRead = 0; 				// Initial voltage read to calibrate the minimum height of the helicopter
 
 //*****************************************************************************
 //
@@ -70,7 +72,17 @@ void
 ADCIntHandler(void)
 {
 	unsigned long ulValue;
+	static int counter = 0;
+	int current;
+	int sum = 0;
+	int i;
+
+	// Clean up, clearing the interrupt
+	ADCIntClear(ADC0_BASE, 3);
+
 	
+
+
 	//
 	// Get the single sample from ADC0. (Yes, I know, a function call!!)
 	ADCSequenceDataGet(ADC0_BASE, 3, &ulValue);
@@ -81,8 +93,18 @@ ADCIntHandler(void)
 	if (g_inBuffer.windex >= g_inBuffer.size)
 		g_inBuffer.windex = 0;
 	//
-	// Clean up, clearing the interrupt
-	ADCIntClear(ADC0_BASE, 3);                          
+
+	if (counter < BUF_SIZE) {
+			counter++;
+			if (counter == BUF_SIZE) {
+				for (i = 0; i < BUF_SIZE; i++) {
+					current = ulValue;
+					sum = sum + current;
+				}
+				initalRead = ADC_TO_MILLIS(sum/BUF_SIZE);			//Average voltage to calibrate the minimum height of the helicopter
+			}
+		}
+
 }
 
 //*****************************************************************************
@@ -158,7 +180,10 @@ int calcRMS(int squareVoltage)
 int calcHeight(int reference, int current)
 {
 	int height;
-	if(reference <= current){
+
+	height = ((current - reference) * 100) / reference;
+
+	/*if(reference <= current){
 		height = 0;
 	}
 	else if(VOLTAGE_DROP <=	(reference - current)){
@@ -166,7 +191,7 @@ int calcHeight(int reference, int current)
 	}
 	else{
 		height = (current * 100)/reference;
-	}
+	}*/
 	return height;
 }
 
@@ -185,16 +210,14 @@ initDisplay (void)
 //
 //*****************************************************************************
 void
-displayInfo(int rms, int pk2pk, int inital, int height)
+displayInfo(int newHght, int inital, int height)
 {
 	char string[40];
 
 	RIT128x96x4StringDraw("Height sensor", 5, 14, 15);
-	usprintf(string, "RMS Voltage = %3dmV", rms);
+	usprintf(string, "curr. Hgt = %3dmV", newHght);
 	RIT128x96x4StringDraw(string, 5, 44, 15);
-	usprintf(string, "pk2pk = %3dmV", pk2pk);
-	RIT128x96x4StringDraw(string, 5, 54, 15);
-	usprintf(string, "Init. = %3dmV", inital);
+	usprintf(string, "Init. Hgt = %3dmV", inital);
 	RIT128x96x4StringDraw(string, 5, 64, 15);
 	usprintf(string, "Hgt. = %3d%%", height);
 	RIT128x96x4StringDraw(string, 5, 74, 15);
@@ -207,12 +230,11 @@ main(void)
 {
 	unsigned int i;
 	int sum;
-	int squareVoltage;
-	int max;
-	int min;
-	int pk2pk;
+	//int squareVoltage;
+	//int max;
+	//int min;
+	//int pk2pk;
 	int current;
-	int initalRead = 0; 				// Initial voltage read to calibrate the minimum height of the helicopter
 	int hgt;
 	
 
@@ -235,28 +257,30 @@ main(void)
 		// Background task: calculate the (approximate) mean of the values in the
 		// circular buffer and display it, together with the sample number.
 		sum = 0;
-		squareVoltage = 0;
-		max = 0;
-		min = 1024;
+		//squareVoltage = 0;
+		//max = 0;
+		//min = 1024;
 		for (i = 0; i < BUF_SIZE; i++) {
 			current = readCircBuf (&g_inBuffer);
 			sum = sum + current;
-			squareVoltage = squareVoltage +(current * current);
+			/*squareVoltage = squareVoltage +(current * current);
 			if (current > max){
 				max = current;
 			}
 			if (current < min){
 				min = current;
-			}
+			}*/
 		}
-		pk2pk = max - min;
-		int rms = ADC_TO_MILLIS(calcRMS(squareVoltage));
-		pk2pk = ADC_TO_MILLIS(pk2pk);
-		if(initalRead == 0){
-			initalRead = pk2pk;
+		//pk2pk = max - min;
+		int newHght = ADC_TO_MILLIS(sum/BUF_SIZE);
+		//pk2pk = ADC_TO_MILLIS(pk2pk);
+		if(initalRead != 0){
+
+			hgt = calcHeight(initalRead, newHght);
+			displayInfo(newHght, (int)initalRead, hgt);
+
 		}
-		hgt = calcHeight(initalRead, rms);
-		displayInfo(rms, pk2pk, (int)initalRead, hgt);
-	}
+		}
+
 }
 
