@@ -33,7 +33,8 @@
 //*****************************************************************************
 #define BUF_SIZE 100
 #define SAMPLE_RATE_HZ 10000
-#define VOLTAGE_DROP 1000
+#define RATIO_TO_PERCNT 10
+#define MILLI_VOLT 1000
 
 #define ADC_REF 3000
 #define ADC_MAX 1023
@@ -181,17 +182,11 @@ int calcHeight(int reference, int current)
 {
 	int height;
 
-	height = ((current - reference) * 100) / reference;
+	//height = ((current - reference) / RATIO_TO_PERCNT); //Difference between current and reference then to %
+	//height = ((reference - current) * 100) / reference; //Ratio of the difference over the reference
+	//height = ((current - reference) / (reference - 1000)) * 100;
+	height = (((current - reference) / (MILLI_VOLT - reference)) * 100);
 
-	/*if(reference <= current){
-		height = 0;
-	}
-	else if(VOLTAGE_DROP <=	(reference - current)){
-		height = 100;
-	}
-	else{
-		height = (current * 100)/reference;
-	}*/
 	return height;
 }
 
@@ -215,11 +210,11 @@ displayInfo(int newHght, int inital, int height)
 	char string[40];
 
 	RIT128x96x4StringDraw("Height sensor", 5, 14, 15);
-	usprintf(string, "curr. Hgt = %3dmV", newHght);
+	usprintf(string, "curr. Hgt = %3dmV ", newHght);
 	RIT128x96x4StringDraw(string, 5, 44, 15);
-	usprintf(string, "Init. Hgt = %3dmV", inital);
+	usprintf(string, "Init. Hgt = %3dmV ", inital);
 	RIT128x96x4StringDraw(string, 5, 64, 15);
-	usprintf(string, "Hgt. = %3d%%", height);
+	usprintf(string, "Hgt. = %d%%    ", height);
 	RIT128x96x4StringDraw(string, 5, 74, 15);
 
 }
