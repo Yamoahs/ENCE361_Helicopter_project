@@ -166,12 +166,10 @@ void initDisplay (void)
 }
 
 //*****************************************************************************
-// Function to display the displays the current height (voltage), reference
-// height and
-//
+// Function to display the displays the current height (mili Volts), reference
+// height (mili Volts) and the current height as a percentage.
 //*****************************************************************************
-void
-displayInfo(int newHght, int inital, int height)
+void displayInfo(int newHght, int inital, int height)
 {
 	char string[40];
 
@@ -191,13 +189,8 @@ main(void)
 {
 	unsigned int i;
 	int sum;
-	//int squareVoltage;
-	//int max;
-	//int min;
-	//int pk2pk;
 	int current;
 	int hgt;
-
 
 	initClock ();
 	initADC ();
@@ -205,42 +198,23 @@ main(void)
 	initCircBuf (&g_inBuffer, BUF_SIZE);
 
 
-
-    //
-    // Enable interrupts to the processor.
-    IntMasterEnable();
-
-
+  // Enable interrupts to the processor.
+  IntMasterEnable();
 
 	while (1)
 	{
-		//
 		// Background task: calculate the (approximate) mean of the values in the
-		// circular buffer and display it, together with the sample number.
+		// circular buffer and display it.
 		sum = 0;
-		//squareVoltage = 0;
-		//max = 0;
-		//min = 1024;
 		for (i = 0; i < BUF_SIZE; i++) {
 			current = readCircBuf (&g_inBuffer);
 			sum = sum + current;
-			/*squareVoltage = squareVoltage +(current * current);
-			if (current > max){
-				max = current;
-			}
-			if (current < min){
-				min = current;
-			}*/
-		}
-		//pk2pk = max - min;
-		int newHght = ADC_TO_MILLIS(sum/BUF_SIZE);
-		//pk2pk = ADC_TO_MILLIS(pk2pk);
-		if(initialRead != 0){
 
+		}
+		int newHght = ADC_TO_MILLIS(sum/BUF_SIZE);
+		if(initialRead != 0){
 			hgt = calcHeight(initialRead, newHght);
 			displayInfo(newHght, (int)initialRead, hgt);
-
 		}
-		}
-
+	}
 }
