@@ -147,7 +147,7 @@ void initClock (void)
 }
 
 // *****************************************************************************
-void initPin (void)
+void initYaw (void)
 {
     // Register the handler for Port F into the vector table
     GPIOPortIntRegister (GPIO_PORTF_BASE, PinChangeIntHandler);
@@ -220,7 +220,7 @@ int main(void)
 	int degrees = 0;
 
 	initClock ();
-	initPin ();
+	initYaw ();
 	initDisplay ();
 
 	// Enable interrupts to the processor.
