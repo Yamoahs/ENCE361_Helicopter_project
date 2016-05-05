@@ -4,12 +4,8 @@
 //		***  Version 2 - Calculates Reference based on newHght ***
 //
 // Author:  Samuel Yamoah
-// Last modified:	24.4.2016
+// Last modified:	5.5.2016
 //
-//*****************************************************************************
-// Results: 
-//  2 x 1.5V cells = 3.17 V (using voltmeter) = 1023 (saturated),
-//   0V = ~3, 1 x 1.5V cell = ~544, noise level ~+- 2
 //*****************************************************************************
 // The setup for the ADC is based on Steve Weddell's 'my_adc.c'.
 //*****************************************************************************
@@ -33,47 +29,39 @@
 //*****************************************************************************
 #define BUF_SIZE 100
 #define SAMPLE_RATE_HZ 10000
-#define RATIO_TO_PERCNT 10
 #define MILLI_VOLT 1000
 
 #define ADC_REF 3000
 #define ADC_MAX 1023
 #define ADC_TO_MILLIS(adc) (((adc) * ADC_REF) / ADC_MAX)
 
-//*****************************************************************************
+//******************************************************************************
 // Global variables
-//*****************************************************************************
+//******************************************************************************
 static circBuf_t g_inBuffer;		// Buffer of size BUF_SIZE integers (sample values)
 static unsigned long g_ulSampCnt;	// Counter for the interrupts
 
-int initalRead = 0; 				// Initial voltage read to calibrate the minimum height of the helicopter
+int initialRead = 0; 				// Initial voltage read to calibrate the minimum height of the helicopter
 
-//*****************************************************************************
-//
+//******************************************************************************
 // The interrupt handler for the for SysTick interrupt.
-//
-//*****************************************************************************
-void
-SysTickIntHandler(void)
+//******************************************************************************
+
+void SysTickIntHandler(void)
 {
-    //
     // Initiate a conversion
-    //
-    ADCProcessorTrigger(ADC0_BASE, 3); 
+    ADCProcessorTrigger(ADC0_BASE, 3);
     g_ulSampCnt++;
 }
 
-//*****************************************************************************
-//
+//******************************************************************************
 // The handler for the ADC conversion complete interrupt.
 // Writes to the circular buffer.
-//
 //*****************************************************************************
-void
-ADCIntHandler(void)
+void ADCIntHandler(void)
 {
 	unsigned long ulValue;
-	static int counter = 0;
+	static int counter = 0;      //Keeping track of the buffer count for the initialRead
 	int current;
 	int sum = 0;
 	int i;
@@ -81,19 +69,14 @@ ADCIntHandler(void)
 	// Clean up, clearing the interrupt
 	ADCIntClear(ADC0_BASE, 3);
 
-	
-
-
-	//
-	// Get the single sample from ADC0. (Yes, I know, a function call!!)
+	// Get the single sample from ADC0. (Yes, I know, I just did what you did sir :p)
 	ADCSequenceDataGet(ADC0_BASE, 3, &ulValue);
-	//
+
 	// Place it in the circular buffer (advancing write index)
 	g_inBuffer.data[g_inBuffer.windex] = (int) ulValue;
 	g_inBuffer.windex++;
 	if (g_inBuffer.windex >= g_inBuffer.size)
 		g_inBuffer.windex = 0;
-	//
 
 	if (counter < BUF_SIZE) {
 			counter++;
@@ -102,30 +85,28 @@ ADCIntHandler(void)
 					current = ulValue;
 					sum = sum + current;
 				}
-				initalRead = ADC_TO_MILLIS(sum/BUF_SIZE);			//Average voltage to calibrate the minimum height of the helicopter
+        //Average voltage to calibrate the minimum height of the helicopter
+				initialRead = ADC_TO_MILLIS(sum/BUF_SIZE);
 			}
 		}
-
 }
 
 //*****************************************************************************
 // Initialisation functions for the clock (incl. SysTick), ADC, display
 //*****************************************************************************
-void
-initClock (void)
+void initClock (void)
 {
-  //
   // Set the clock rate. From Section 19.1 in stellaris_peripheral_lib_UG.doc:
-  //  "In order to use the ADC, the PLL must be used; the PLL output will be 
+  //  "In order to use the ADC, the PLL must be used; the PLL output will be
   //  used to create the clock required by the ADC." ADC rate = 8 MHz / 10.
   //  The processor clock rate = 20 MHz.
   SysCtlClockSet(SYSCTL_SYSDIV_10 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN |
-                   SYSCTL_XTAL_8MHZ);	
-  //
+                   SYSCTL_XTAL_8MHZ);
+
   // Set up the period for the SysTick timer.  The SysTick timer period is
   // set as a function of the system clock.
   SysTickPeriodSet(SysCtlClockGet() / SAMPLE_RATE_HZ);
-  //
+
   // Register the interrupt handler
   SysTickIntRegister(SysTickIntHandler);
   //
@@ -134,19 +115,16 @@ initClock (void)
   SysTickEnable();
 }
 
-void 
-initADC (void)
+void initADC (void)
 {
-  //
   // The ADC0 peripheral must be enabled for configuration and use.
   SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
-    
+
   // Enable sample sequence 3 with a processor signal trigger.  Sequence 3
   // will do a single sample when the processor sends a signal to start the
-  // conversion.  
+  // conversion.
   ADCSequenceConfigure(ADC0_BASE, 3, ADC_TRIGGER_PROCESSOR, 0);
-  
-  //
+
   // Configure step 0 on sequence 3.  Sample channel 0 (ADC_CTL_CH0) in
   // single-ended mode (default) and configure the interrupt flag
   // (ADC_CTL_IE) to be set when the sample is done.  Tell the ADC logic
@@ -156,52 +134,40 @@ initADC (void)
   // conversion using sequence 3 we will only configure step 0.  For more
   // on the ADC sequences and steps, refer to the LM3S1968 datasheet.
   ADCSequenceStepConfigure(ADC0_BASE, 3, 0, ADC_CTL_CH0 | ADC_CTL_IE |
-                             ADC_CTL_END);    
-                             
-  //
+                             ADC_CTL_END);
+
   // Since sample sequence 3 is now configured, it must be enabled.
-  ADCSequenceEnable(ADC0_BASE, 3);     
-  
-  //
+  ADCSequenceEnable(ADC0_BASE, 3);
+
   // Register the interrupt handler
   ADCIntRegister (ADC0_BASE, 3, ADCIntHandler);
-  
-  //
+
   // Enable interrupts for ADC0 sequence 3 (clears any outstanding interrupts)
   ADCIntEnable(ADC0_BASE, 3);
 }
 
-int calcRMS(int squareVoltage)
-{
-	int result = (isqrt(squareVoltage/BUF_SIZE));
-	return result;
-
-}
-
+//******************************************************************************
+//Calculates the current height of the helicopter as a ratio based on the
+// reference and the current height. The returned value is a percentage.
+//******************************************************************************
 int calcHeight(int reference, int current)
 {
 	int height;
 
-	//height = ((current - reference) / RATIO_TO_PERCNT); //Difference between current and reference then to %
-	//height = ((reference - current) * 100) / reference; //Ratio of the difference over the reference
-	//height = ((current - reference) / (reference - 1000)) * 100;
 	height = (((current - reference)  * 100) / (MILLI_VOLT - reference));
 
 	return height;
 }
 
-void
-initDisplay (void)
+void initDisplay (void)
 {
   // intialise the OLED display
-  RIT128x96x4Init(1000000);	
+  RIT128x96x4Init(1000000);
 }
 
 //*****************************************************************************
-//
-// Function to display the mean ADC value (10-bit value, note) and sample count.
-//  See SW-EK-LM3S1968-Firmware-UG.pdf for information about the display driver
-//  and the Micro Standard Library Module (ustdlib.c & ustdlib.h).
+// Function to display the displays the current height (voltage), reference
+// height and
 //
 //*****************************************************************************
 void
@@ -231,7 +197,7 @@ main(void)
 	//int pk2pk;
 	int current;
 	int hgt;
-	
+
 
 	initClock ();
 	initADC ();
@@ -269,13 +235,12 @@ main(void)
 		//pk2pk = max - min;
 		int newHght = ADC_TO_MILLIS(sum/BUF_SIZE);
 		//pk2pk = ADC_TO_MILLIS(pk2pk);
-		if(initalRead != 0){
+		if(initialRead != 0){
 
-			hgt = calcHeight(initalRead, newHght);
-			displayInfo(newHght, (int)initalRead, hgt);
+			hgt = calcHeight(initialRead, newHght);
+			displayInfo(newHght, (int)initialRead, hgt);
 
 		}
 		}
 
 }
-
