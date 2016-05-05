@@ -1,6 +1,7 @@
 //*****************************************************************************
 //
-// Altitude.c - Simple interrupt driven program which samples with ADC0 to calculate the height of the helicopter
+// Altitude.c - Simple interrupt driven program which samples with ADC0 to
+// calculate the height of the helicopter
 //		***  Version 2 - Calculates Reference based on newHght ***
 //
 // Author:  Samuel Yamoah
