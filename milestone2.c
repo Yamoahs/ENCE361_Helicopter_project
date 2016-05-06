@@ -5,7 +5,7 @@
 // on PF5 (pin 27) & PF7 (pin 29)
 //		***  Version 2 - Calculates Reference based on newHght ***
 //
-// Author:  Samuel Yamoah
+// Author:  Samuel Yamoah & Josh Burt
 // Date Created: 5.5.2016
 // Last modified:	6.5.2016
 //
@@ -31,7 +31,6 @@
 //******************************************************************************
 // Constants
 //******************************************************************************
-#define MAX_24BIT_VAL 0X0FFFFFF
 #define DEGREES 360
 #define STATES_ON_DISC 448
 
@@ -46,8 +45,6 @@
 //******************************************************************************
 // Global variables
 //******************************************************************************
-static volatile unsigned long g_ulIntCntA;	// Monitors interrupts on A
-static volatile unsigned long g_ulIntCntB;	// Monitors interrupts on B
 int currentState = 1;
 int previousState = 1;
 int yaw = 0;
@@ -96,7 +93,7 @@ void yawCalc (void)
 // The interrupt handler for the for the pin change interrupt. Note that
 //  the SysTick counter is decrementing.
 //******************************************************************************
-void PinChangeIntHandler (void)
+void YawChangeIntHandler (void)
 {
 	/*States:
 	 * A 1 = 00
@@ -118,37 +115,35 @@ void PinChangeIntHandler (void)
 
 	if (!ulPortValA)
 	{
-		if (ulPortValB){
+		if (ulPortValB)
+		{
 			currentState = 2;
 		}
 		else
 		{
 			currentState = 1;
 		}
-		// Count interrupts
-			g_ulIntCntA++;
 	}
 	else
 	{
-		if (ulPortValB){
+		if (ulPortValB)
+		{
 			currentState = 3;
 		}
 		else
 		{
 			currentState = 4;
 		}
-		// Count interrupts
-		g_ulIntCntB++;
 	}
 
 	yawCalc();
 }
 
 //******************************************************************************
-// The handler for the ADC conversion complete interrupt.
+// The handler for the ADC conversion (height) complete interrupt.
 // Writes to the circular buffer.
 //*****************************************************************************
-void ADCIntHandler(void)
+void HeightIntHandler(void)
 {
 	unsigned long ulValue;
 	static int counter = 0;      //Keeping track of the buffer count for the initialRead
@@ -209,22 +204,18 @@ void initClock (void)
 void initYaw (void)
 {
     // Register the handler for Port F into the vector table
-    GPIOPortIntRegister (GPIO_PORTF_BASE, PinChangeIntHandler);
+    GPIOPortIntRegister (GPIO_PORTF_BASE, YawChangeIntHandler);
 
     // Enable and configure the port and pin used:  input on PF5: Pin 27 & PF7: Pin 29
     SysCtlPeripheralEnable (SYSCTL_PERIPH_GPIOF);
-    GPIOPadConfigSet (GPIO_PORTF_BASE, GPIO_PIN_5, GPIO_STRENGTH_2MA,
+    GPIOPadConfigSet (GPIO_PORTF_BASE, GPIO_PIN_5 | GPIO_PIN_7, GPIO_STRENGTH_2MA,
        GPIO_PIN_TYPE_STD_WPU);
-    GPIOPadConfigSet (GPIO_PORTF_BASE, GPIO_PIN_7, GPIO_STRENGTH_2MA,
-           GPIO_PIN_TYPE_STD_WPU);
 
     // Set up the pin change interrupt (both edges)
-    GPIOIntTypeSet (GPIO_PORTF_BASE, GPIO_PIN_5, GPIO_BOTH_EDGES);
-    GPIOIntTypeSet (GPIO_PORTF_BASE, GPIO_PIN_7, GPIO_BOTH_EDGES);
+    GPIOIntTypeSet (GPIO_PORTF_BASE, GPIO_PIN_5 | GPIO_PIN_7, GPIO_BOTH_EDGES);
 
     // Enable the pin change interrupt
-    GPIOPinIntEnable (GPIO_PORTF_BASE, GPIO_PIN_5);
-    GPIOPinIntEnable (GPIO_PORTF_BASE, GPIO_PIN_7);
+    GPIOPinIntEnable (GPIO_PORTF_BASE, GPIO_PIN_5 | GPIO_PIN_7);
     IntEnable (INT_GPIOF);	// Note: INT_GPIOF defined in inc/hw_ints.h
 }
 
@@ -254,7 +245,7 @@ void initADC (void)
   ADCSequenceEnable(ADC0_BASE, 3);
 
   // Register the interrupt handler
-  ADCIntRegister (ADC0_BASE, 3, ADCIntHandler);
+  ADCIntRegister (ADC0_BASE, 3, HeightIntHandler);
 
   // Enable interrupts for ADC0 sequence 3 (clears any outstanding interrupts)
   ADCIntEnable(ADC0_BASE, 3);
@@ -301,41 +292,40 @@ void displayInfo(int newHght, int inital, int height, int degrees)
 {
 	char string[40];
 
-  sprintf(string, "Init. Hgt = %3dmV ", inital);
-  RIT128x96x4StringDraw(string, 5, 44, 15);
+	sprintf(string, "Init. Hgt = %3dmV ", inital);
+	RIT128x96x4StringDraw(string, 5, 44, 15);
 	sprintf(string, "curr. Hgt = %3dmV ", newHght);
 	RIT128x96x4StringDraw(string, 5, 54, 15);
 	sprintf(string, "Hgt. (%%) = %d%%    ", height);
 	RIT128x96x4StringDraw(string, 5, 64, 15);
 
-  sprintf (string, "yaw: %5d", yaw);
-  RIT128x96x4StringDraw (string, 5, 74, 15);
-  sprintf (string, "Deg = %4d", degrees);
-  RIT128x96x4StringDraw (string, 5, 84, 15);
+	sprintf (string, "yaw: %5d", yaw);
+	RIT128x96x4StringDraw (string, 5, 74, 15);
+	sprintf (string, "Deg = %4d", degrees);
+	RIT128x96x4StringDraw (string, 5, 84, 15);
 }
 
-int
-main(void)
+int main(void)
 {
 	unsigned int i;
 	int sum = 0;
 	int current = 0;
 	int hgt = 0;
-  int degrees = 0;
+	int degrees = 0;
 
 	initClock ();
 	initADC ();
-  initYaw ();
+	initYaw ();
 	initDisplay ();
 	initCircBuf (&g_inBuffer, BUF_SIZE);
 
 
-  // Enable interrupts to the processor.
-  IntMasterEnable();
+	// Enable interrupts to the processor.
+	IntMasterEnable();
 
 	while (1)
 	{
-    degrees = yawToDeg();
+		degrees = yawToDeg();
 
 		// Background task: calculate the (approximate) mean of the values in the
 		// circular buffer and display it.
@@ -346,7 +336,8 @@ main(void)
 
 		}
 		int newHght = ADC_TO_MILLIS(sum/BUF_SIZE);
-		if(initialRead != 0){
+		if(initialRead != 0)
+		{
 			hgt = calcHeight(initialRead, newHght);
 			displayInfo(newHght, (int)initialRead, hgt, degrees);
 		}
