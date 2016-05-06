@@ -79,15 +79,6 @@ void PinChangeIntHandler (void)
 	 * B 2 = 01
 	 * C 3 = 11
 	 * D 4 = 10
-}
-
-//******************************************************************************
-// Initialisation functions: clock, GPIO pin, display, buffer
-//******************************************************************************
-void initClock (void)
-{
-  // Set the clock rate @ 3125000 Hz (minimum possible). The wrap-around
-  //  period is then 5.36871 sec.
 	 */
 
 	unsigned long ulPortValA;
