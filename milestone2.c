@@ -292,6 +292,11 @@ void displayInfo(int newHght, int inital, int height, int degrees)
 {
 	char string[40];
 
+	sprintf(string, "prev state: %3d ", previousState);
+	RIT128x96x4StringDraw(string, 5, 14, 15);
+	sprintf(string, "curr state: %3d ", currentState);
+	RIT128x96x4StringDraw(string, 5, 24, 15);
+
 	sprintf(string, "Init. Hgt = %3dmV ", inital);
 	RIT128x96x4StringDraw(string, 5, 44, 15);
 	sprintf(string, "curr. Hgt = %3dmV ", newHght);
