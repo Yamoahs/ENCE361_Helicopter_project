@@ -7,7 +7,7 @@
 //
 // Author:  Samuel Yamoah
 // Date Created: 5.5.2016
-// Last modified:	5.5.2016
+// Last modified:	6.5.2016
 //
 //*****************************************************************************
 
@@ -52,11 +52,22 @@ int currentState = 1;
 int previousState = 1;
 int yaw = 0;
 
-tatic circBuf_t g_inBuffer;		// Buffer of size BUF_SIZE integers (sample values)
+static circBuf_t g_inBuffer;		// Buffer of size BUF_SIZE integers (sample values)
 static unsigned long g_ulSampCnt;	// Counter for the interrupts
 
 int initialRead = 0; 	// Initial voltage read to calibrate the minimum height of the helicopter
 
+
+//******************************************************************************
+// The interrupt handler for the for SysTick interrupt.
+//******************************************************************************
+
+void SysTickIntHandler(void)
+{
+    // Initiate a conversion
+    ADCProcessorTrigger(ADC0_BASE, 3);
+    g_ulSampCnt++;
+}
 
 //******************************************************************************
 // Determines the yaw movement based on state changes. If the state change
@@ -92,15 +103,6 @@ void PinChangeIntHandler (void)
 	 * B 2 = 01
 	 * C 3 = 11
 	 * D 4 = 10
-}
-
-//******************************************************************************
-// Initialisation functions: clock, GPIO pin, display, buffer
-//******************************************************************************
-void initClock (void)
-{
-  // Set the clock rate @ 3125000 Hz (minimum possible). The wrap-around
-  //  period is then 5.36871 sec.
 	 */
 
 	unsigned long ulPortValA;
@@ -286,7 +288,7 @@ int calcHeight(int reference, int current)
 int yawToDeg ()
 {
 	int deg = 0;
-	deg = (yaw * DEGREES + (STATES_ON_DISC / 2)) / STATES_ON_DISC;
+	deg = ((yaw * DEGREES + (STATES_ON_DISC / 2)) / STATES_ON_DISC) % 360;
 
 	return deg;
 }
@@ -303,7 +305,7 @@ void displayInfo(int newHght, int inital, int height, int degrees)
   RIT128x96x4StringDraw(string, 5, 44, 15);
 	sprintf(string, "curr. Hgt = %3dmV ", newHght);
 	RIT128x96x4StringDraw(string, 5, 54, 15);
-	sprintf(string, "Hgt. %% = %d%%    ", height);
+	sprintf(string, "Hgt. (%%) = %d%%    ", height);
 	RIT128x96x4StringDraw(string, 5, 64, 15);
 
   sprintf (string, "yaw: %5d", yaw);
