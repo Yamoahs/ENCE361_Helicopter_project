@@ -279,7 +279,7 @@ int calcHeight(int reference, int current)
 int yawToDeg ()
 {
 	int deg = 0;
-	deg = ((yaw * DEGREES + (STATES_ON_DISC / 2)) / STATES_ON_DISC) % 360;
+	deg = ((yaw * DEGREES + (STATES_ON_DISC / 2)) / STATES_ON_DISC);
 
 	return deg;
 }
