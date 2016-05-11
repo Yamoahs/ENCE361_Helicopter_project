@@ -266,7 +266,7 @@ int calcHeight(int reference, int current)
 {
 	int height;
 
-	height = (((current - reference)  * 100) / (MILLI_VOLT - reference));
+	height = (((reference - current)  * 100) / (MILLI_VOLT));
 
 	return height;
 }
