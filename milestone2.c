@@ -315,7 +315,7 @@ int main(void)
 	unsigned int i;
 	int sum = 0;
 	int current = 0;
-	int hgt = 0;
+	int hgt_percent = 0;
 	int degrees = 0;
 
 	initClock ();
@@ -343,8 +343,8 @@ int main(void)
 		int newHght = ADC_TO_MILLIS(sum/BUF_SIZE);
 		if(initialRead != 0)
 		{
-			hgt = calcHeight(initialRead, newHght);
-			displayInfo(newHght, (int)initialRead, hgt, degrees);
+			hgt_percent = calcHeight(initialRead, newHght);
+			displayInfo(newHght, (int)initialRead, hgt_percent, degrees);
 		}
 	}
 }
