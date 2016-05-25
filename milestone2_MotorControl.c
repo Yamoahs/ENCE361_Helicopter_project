@@ -53,8 +53,8 @@
 #define MOTOR_RATE_HZ 200
 #define PWM_DIV_CODE SYSCTL_PWMDIV_4
 #define PWM_DIVIDER 4
-#define MOTOR_DUTY_MAIN 60
-#define MOTOR_DUTY_TAIL 15
+#define MOTOR_DUTY_MAIN 80
+#define MOTOR_DUTY_TAIL 2
 
 #define BAUD_RATE 9600ul
 
@@ -69,6 +69,13 @@ static circBuf_t g_inBuffer;		// Buffer of size BUF_SIZE integers (sample values
 static unsigned long g_ulSampCnt;	// Counter for the interrupts
 
 int initialRead = 0; 	// Initial voltage read to calibrate the minimum height of the helicopter
+
+signed int main_duty = 0;
+signed int tail_duty = 0;
+
+// Compute the PWM period in terms of the PWM clock
+unsigned long period;
+
 
 
 //******************************************************************************
@@ -199,12 +206,13 @@ void HeightIntHandler(void)
 void
 ButtPressIntHandler(void)
 {
-	unsigned long ulSelect; //RESET
-	unsigned long ulUp; //CW/LEFT
-	unsigned long ulDown; //CCW/RIGHT
-	unsigned long ulCww; //SELECT
-	unsigned long ulCw; //UP
-	unsigned long ulReset; //DOWN
+	unsigned long ulSelect; //SELECT
+	unsigned long ulUp; //UP
+	unsigned long ulDown; //DOWN
+	unsigned long ulCww; //CCW/RIGHT
+	unsigned long ulCw; //CW/LEFT
+	unsigned long ulReset; //RESET
+	int power = 0;
 
     // Clear the interrupt (documentation recommends doing this early)
     GPIOPinIntClear (GPIO_PORTB_BASE, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6);
@@ -217,9 +225,46 @@ ButtPressIntHandler(void)
     ulUp = GPIOPinRead (GPIO_PORTB_BASE, GPIO_PIN_5);
     ulDown = GPIOPinRead (GPIO_PORTB_BASE, GPIO_PIN_6);
 
-    //if(!ulUp){
+    period = SysCtlClockGet () / PWM_DIVIDER / MOTOR_RATE_HZ;
 
-    //}
+    if(!ulUp && main_duty < 98){
+    	main_duty += 10;
+    	if (main_duty >= 98) main_duty = 98;
+    	PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty /100);
+    }
+
+    if (!ulDown && main_duty > 2){
+    	main_duty -= 10;
+    	if (main_duty <= 2) main_duty = 2;
+    	PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty /100);
+    }
+
+    if(!ulCww && tail_duty < 98){
+    	tail_duty += 15;
+    	if (tail_duty >= 98) tail_duty = 98;
+    	PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
+    }
+
+    if (!ulCw && tail_duty > 2){
+		  tail_duty -= 15;
+		  if (tail_duty <= 2) tail_duty = 2;
+		  PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
+	   }
+
+    if (ulSelect){
+    	if (power == 0){
+    		main_duty = MOTOR_DUTY_MAIN;
+    		tail_duty = MOTOR_DUTY_TAIL;
+    		power == 1;
+    	}
+    	if (power == 1){
+			main_duty = 10;
+			tail_duty = 10;
+			power == 0;
+		}
+    }
+
+    if (!ulReset) SysCtlReset();
 
 	/*if (!ulPortValA) {
 		 SysCtlReset();
@@ -298,7 +343,8 @@ void initSysTick (void)
 //******************************************************************
 void initMotorPins (void)
 {
-    SysCtlPeripheralEnable (SYSCTL_PERIPH_GPIOD | SYSCTL_PERIPH_GPIOF);
+    SysCtlPeripheralEnable (SYSCTL_PERIPH_GPIOD);
+    SysCtlPeripheralEnable (SYSCTL_PERIPH_GPIOF);
     GPIOPinTypePWM (GPIO_PORTD_BASE, GPIO_PIN_1);
     GPIOPinTypePWM (GPIO_PORTF_BASE, GPIO_PIN_2);
 }
@@ -316,13 +362,13 @@ void initPWMchan (void)
     //
         SysCtlPWMClockSet (PWM_DIV_CODE);
 
-    PWMGenConfigure (PWM_BASE, PWM_GEN_0 | PWM_GEN_2,
-    				PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC);
-    period = SysCtlClockGet () / PWM_DIVIDER / MOTOR_RATE_HZ;
-    PWMGenPeriodSet (PWM_BASE, PWM_GEN_0, period);
-    PWMGenPeriodSet (PWM_BASE, PWM_GEN_2, period);
-    PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * MOTOR_DUTY_MAIN / 100);
-    PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * MOTOR_DUTY_TAIL / 100);
+	PWMGenConfigure (PWM_BASE, PWM_GEN_0, PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC);
+	PWMGenConfigure (PWM_BASE, PWM_GEN_2, PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC);
+	period = SysCtlClockGet () / PWM_DIVIDER / MOTOR_RATE_HZ;
+	PWMGenPeriodSet (PWM_BASE, PWM_GEN_0, period);
+	PWMGenPeriodSet (PWM_BASE, PWM_GEN_2, period);
+	PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * MOTOR_DUTY_MAIN / 100);
+	PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * MOTOR_DUTY_TAIL / 100);
     //
     // Enable the PWM output signal.
     //
@@ -331,7 +377,8 @@ void initPWMchan (void)
     //
     // Enable the PWM generator.
     //
-    PWMGenEnable (PWM_BASE, PWM_GEN_0 | PWM_GEN_2);
+    PWMGenEnable (PWM_BASE, PWM_GEN_0);
+    PWMGenEnable (PWM_BASE, PWM_GEN_2);
 }
 
 // *****************************************************************************
@@ -494,6 +541,17 @@ void displayInfo(int height, int degrees, int main, int tail)
 	RIT128x96x4StringDraw (string, 5, 74, 15);
 	sprintf (string, "Deg = %4d", degrees);
 	RIT128x96x4StringDraw (string, 5, 84, 15);
+
+	if ((g_ulSampCnt % 100) == 0){
+		usprintf(string, "YEah It\n");
+		UARTSend (string);
+		usprintf(string, "main: %d\n", main);
+		UARTSend (string);
+		usprintf(string, "tail: %d\n", tail);
+		UARTSend (string);
+		usprintf(string, "-----------------------\n");
+		UARTSend (string);
+	}
 }
 
 int main(void)
@@ -504,21 +562,24 @@ int main(void)
 	int hgt_percent = 0;
 	int degrees = 0;
 
-	signed int main_duty = MOTOR_DUTY_MAIN;
-	signed int tail_duty = MOTOR_DUTY_TAIL;
+	//signed int main_duty = MOTOR_DUTY_MAIN;
+	//signed int tail_duty = MOTOR_DUTY_TAIL;
 	unsigned long period;
 
 	initClock ();
+	initSysTick ();
 	initADC ();
 	initYaw ();
-	initDisplay ();
+	intButtons ();
 	initMotorPins ();
 	initConsole ();
-	intButtons ();
+	initDisplay ();
+
 	initButSet (UP_B | DOWN_B | LEFT_B | RIGHT_B, SYSTICK_RATE_HZ);
 	initPWMchan ();
-	initSysTick ();
+
 	initCircBuf (&g_inBuffer, BUF_SIZE);
+
 
 
 	// Enable interrupts to the processor.
@@ -545,32 +606,32 @@ int main(void)
 			hgt_percent = calcHeight(initialRead, newHght);
 		}
 
-	       if (checkBut (UP) && main_duty < 98)
-	       {
-	    	  main_duty += 10;
-	    	  if (main_duty >= 98) main_duty = 98;
-	          PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty /100);
+	   if (checkBut (UP) && main_duty < 98)
+	   {
+		  main_duty += 10;
+		  if (main_duty >= 98) main_duty = 98;
+		  PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty /100);
 
-	       }
-	       if (checkBut (DOWN) && main_duty > 2)
-	       {
-	    	  main_duty -= 10;
-	    	  if (main_duty <= 2) main_duty = 2;
-	          PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty /100);
-	       }
+	   }
+	   if (checkBut (DOWN) && main_duty > 2)
+	   {
+		  main_duty -= 10;
+		  if (main_duty <= 2) main_duty = 2;
+		  PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty /100);
+	   }
 
-	       if (checkBut (RIGHT) && tail_duty < 98)
-	       {
-	    	  tail_duty += 15;
-	    	  if (tail_duty >= 98) tail_duty = 98;
-	          PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
-	       }
-	       if (checkBut (LEFT) && tail_duty > 2)
-	       {
-	    	  tail_duty -= 15;
-	    	  if (tail_duty <= 2) tail_duty = 2;
-	          PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
-	       }
+	   if (checkBut (RIGHT) && tail_duty < 98)
+	   {
+		  tail_duty += 15;
+		  if (tail_duty >= 98) tail_duty = 98;
+		  PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
+	   }
+	   if (checkBut (LEFT) && tail_duty > 2)
+	   {
+		  tail_duty -= 15;
+		  if (tail_duty <= 2) tail_duty = 2;
+		  PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
+	   }
 
 	   	displayInfo(hgt_percent, degrees, main_duty, tail_duty);
 	}
