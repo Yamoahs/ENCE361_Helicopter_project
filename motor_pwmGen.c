@@ -33,7 +33,8 @@
 #define MOTOR_RATE_HZ 200
 #define PWM_DIV_CODE SYSCTL_PWMDIV_4
 #define PWM_DIVIDER 4
-#define MOTOR_DEF_DUTY 50
+#define MOTOR_DUTY_MAIN 80
+#define MOTOR_DUTY_TAIL 2
 
 //*******************************************************************
 // ISR for the SysTick interrupt (used for button debouncing).
@@ -83,7 +84,8 @@ initSysTick (void)
 void
 initPin (void)
 {
-    SysCtlPeripheralEnable (SYSCTL_PERIPH_GPIOD | SYSCTL_PERIPH_GPIOF);
+    SysCtlPeripheralEnable (SYSCTL_PERIPH_GPIOD);
+    SysCtlPeripheralEnable (SYSCTL_PERIPH_GPIOF);
     GPIOPinTypePWM (GPIO_PORTD_BASE, GPIO_PIN_1);
     GPIOPinTypePWM (GPIO_PORTF_BASE, GPIO_PIN_2);
 }
@@ -109,13 +111,13 @@ initPWMchan (void)
     //
         SysCtlPWMClockSet (PWM_DIV_CODE);
 
-    PWMGenConfigure (PWM_BASE, PWM_GEN_0 | PWM_GEN_2,
-    				PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC);
+    PWMGenConfigure (PWM_BASE, PWM_GEN_0, PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC);
+    PWMGenConfigure (PWM_BASE, PWM_GEN_2, PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC);
     period = SysCtlClockGet () / PWM_DIVIDER / MOTOR_RATE_HZ;
     PWMGenPeriodSet (PWM_BASE, PWM_GEN_0, period);
     PWMGenPeriodSet (PWM_BASE, PWM_GEN_2, period);
-    PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * MOTOR_DEF_DUTY / 100);
-    PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * MOTOR_DEF_DUTY / 100);
+    PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * MOTOR_DUTY_MAIN / 100);
+    PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * MOTOR_DUTY_TAIL / 100);
     //
     // Enable the PWM output signal.
     //
@@ -124,7 +126,8 @@ initPWMchan (void)
     //
     // Enable the PWM generator.
     //
-    PWMGenEnable (PWM_BASE, PWM_GEN_0 | PWM_GEN_2);
+    PWMGenEnable (PWM_BASE, PWM_GEN_0);
+    PWMGenEnable (PWM_BASE, PWM_GEN_2);
 }
 
 void
@@ -146,8 +149,8 @@ displayInfo(int main, int tail)
 int
 main (void)
 {
-    signed int main_duty = MOTOR_DEF_DUTY;
-    signed int tail_duty = MOTOR_DEF_DUTY;
+    signed int main_duty = MOTOR_DUTY_MAIN;
+    signed int tail_duty = MOTOR_DUTY_TAIL;
     unsigned long period;
 
     initClock ();
