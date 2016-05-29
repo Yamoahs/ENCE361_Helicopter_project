@@ -56,7 +56,7 @@ SysTickIntHandler (void)
 {
 	//
 	// Poll the buttons
-	updateButtons();
+	//updateButtons();
 
 	//Polls display on UART0
 	g_tickCnt++;
@@ -129,13 +129,13 @@ void ButtPressIntHandler (void)
 		PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty /100);
 		}
 
-	if(ulCCw == 0 && tail_duty < 98){
+	if(ulCw == 0 && tail_duty < 98){
 		tail_duty += 15;
 		if (tail_duty >= 98) tail_duty = 98;
 		PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
 		}
 
-	if(ulCw == 0 && tail_duty > 10){
+	if(ulCCw == 0 && tail_duty > 10){
 		tail_duty -= 15;
 		if (tail_duty <= 10) tail_duty = 10;
 		PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
@@ -147,6 +147,7 @@ void ButtPressIntHandler (void)
 			tail_duty = MOTOR_DUTY_TAIL;
 			state = 1;
 		}
+	}
 		//if (state == 1){
 			//main_duty = 0;
 			//tail_duty = 0;
@@ -157,7 +158,7 @@ void ButtPressIntHandler (void)
 	if(ulReset == 0){
 		if (!ulReset) SysCtlReset();
 		}
-}
+
 }
 
 void intButton (void)
@@ -239,7 +240,7 @@ TxStatus (void)
 // Initialise the GPIO for the PWM output (Port D and Port F)
 //******************************************************************
 void
-initPin (void)
+initMotorPin (void)
 {
     SysCtlPeripheralEnable (SYSCTL_PERIPH_GPIOD);
     SysCtlPeripheralEnable (SYSCTL_PERIPH_GPIOF);
@@ -310,7 +311,7 @@ main (void)
 
 
     initClock ();
-    initPin ();
+    initMotorPin ();
     initDisplay ();
     intButton();
 	initConsole ();
@@ -327,34 +328,7 @@ main (void)
     // Loop forever while controlling the PWM duty cycle.
     while (1)
     {
-       // Background task: Check for button pushes and control the
-       //  PWM duty cycle +/- 5% within the range 2% to 98%.
-      /* if (checkBut (UP) && main_duty < 98)
-       {
-    	  main_duty += 10;
-    	  if (main_duty >= 98) main_duty = 98;
-          PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty /100);
 
-       }
-       if (checkBut (DOWN) && main_duty > 2)
-       {
-    	  main_duty -= 10;
-    	  if (main_duty <= 2) main_duty = 2;
-          PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty /100);
-       }
-
-       if (checkBut (RIGHT) && tail_duty < 98)
-       {
-    	  tail_duty += 15;
-    	  if (tail_duty >= 98) tail_duty = 98;
-          PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
-       }
-       if (checkBut (LEFT) && tail_duty > 2)
-       {
-    	  tail_duty -= 15;
-    	  if (tail_duty <= 2) tail_duty = 2;
-          PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
-       }*/
 
        displayInfo(main_duty, tail_duty);
        TxStatus ();
