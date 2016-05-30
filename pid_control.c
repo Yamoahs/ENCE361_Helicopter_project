@@ -5,7 +5,7 @@
 //
 // Author:  Samuel Yamoah
 // Date Created: 25.5.2016
-// Last modified: 30.5.2016
+// Last modified: 31.5.2016
 //
 //************************************************************************
 /*Proportional (P): c(t) = Kpe(t)
@@ -20,6 +20,7 @@
  */
 
 static int desiredHeight = 0;
+static int desiredYaw = 0;
 double dt = SysCtlClockGet() / SYSTICK_RATE_HZ;
 
 
@@ -50,25 +51,41 @@ static double derivativeControl (double error, double, Kd, double dt)
 }
 
 
-void PIDControl(int currentHeight, double dt)
+void PIDControl(int currentHeight, int currrentYaw, double dt)
 {
-	float Kp = 1;
-	float Ki = 1;
-	float Kd;
-	double proportion;
-	static double intergral = 0.0;
-	static double derivative;
-	static double prevError = 0.0;
-	static signed long error = desiredHeight - currentHeight;
-	prevError = error;
+	float altKp = 1;
+	float altKi = 1;
+	float altKd = 1.0;
+	double altProportion;
+	static double altIntergral = 0.0;
+	static double altDerivative;
+	static double altPrevError = 0.0;
+	static signed long altError = desiredHeight - currentHeight;
+
+	float yawKp = 1;
+	float yawKi = 1;
+	float yawKd = 1.0;
+	double yawProportion;
+	static double yawIntergral = 0.0;
+	static double yawDerivative;
+	static double yawPrevError = 0.0;
+	static signed long yawError = desiredYaw - currentYaw;
 
 
-	proportion = proportionalControl(error, Kp);
-	intergral = integralControl(error, Ki, dt);
+
+	altProportion = proportionalControl(AltError, altKp);
+	altIntergral = integralControl(altError, altKi, dt);
+	altDerivative = derivativeControl(altError, prevError, kd, dt);
+
+	yawProportion = proportionalControl(yawError, yawKp);
+	yawIntergral = integralControl(yawError, yawKi, dt);
+	yawDerivative = derivativeControl(yawError, yawPrevError, yawKd, dt);
+
+	altPrevError = altError;
+	yawPrevError = yawError;
 
 
-	main_duty = proportion + intergral;
+	main_duty = altProportion + altIntergral + altDerivative;
+	tail_duty = yawProportion + yawIntergral + yawDerivative;
 
 }
-
-
