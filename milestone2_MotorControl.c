@@ -67,8 +67,8 @@ static unsigned long g_ulSampCnt;	// Counter for the interrupts
 
 int initialRead = 0; 	// Initial voltage read to calibrate the minimum height of the helicopter
 
-signed int main_duty = 0;
-signed int tail_duty = 0;
+static volatile signed int main_duty = 0;
+static volatile signed int tail_duty = 0;
 int state = 0;
 unsigned long period;
 
@@ -134,19 +134,21 @@ void ButtPressIntHandler (void)
 		PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
 		}
 
-	if(ulSelect == 0){
-		if (state == 0){
+	if(ulSelect == 0 && state == 0){
 			main_duty = MOTOR_DUTY_MAIN;
 			tail_duty = MOTOR_DUTY_TAIL;
+			PWMOutputState (PWM_BASE, PWM_OUT_1_BIT, true);
+			PWMOutputState (PWM_BASE, PWM_OUT_4_BIT, true);
+			PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty /100);
+			PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
 			state = 1;
-		}
 	}
-		//if (state == 1){
-			//main_duty = 0;
-			//tail_duty = 0;
-			//state = 0;
 
-		//}
+	/*if(ulSelect == 0 && state == 1){
+		PWMOutputState (PWM_BASE, PWM_OUT_1_BIT, false);
+		PWMOutputState (PWM_BASE, PWM_OUT_4_BIT, false);
+			state = 0;
+		}*/
 
 	if(ulReset == 0){
 		if (!ulReset) SysCtlReset();
@@ -432,13 +434,13 @@ initPWMchan (void)
     period = SysCtlClockGet () / PWM_DIVIDER / MOTOR_RATE_HZ;
     PWMGenPeriodSet (PWM_BASE, PWM_GEN_0, period);
     PWMGenPeriodSet (PWM_BASE, PWM_GEN_2, period);
-    PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * MOTOR_DUTY_MAIN / 100);
-    PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * MOTOR_DUTY_TAIL / 100);
+    PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty / 100);
+    PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty / 100);
     //
     // Enable the PWM output signal.
     //
-    PWMOutputState (PWM_BASE, PWM_OUT_1_BIT, true);
-    PWMOutputState (PWM_BASE, PWM_OUT_4_BIT, true);
+    PWMOutputState (PWM_BASE, PWM_OUT_1_BIT, false);
+    PWMOutputState (PWM_BASE, PWM_OUT_4_BIT, false);
     //
     // Enable the PWM generator.
     //
@@ -504,6 +506,8 @@ void displayInfo(int newHght, int inital, int height, int degrees)
 		sprintf(string, " Alt (%): %d\n----------\n", height);
 		UARTSend (string);
 		sprintf(string, " Yaw: %d\n----------\n", degrees);
+		UARTSend (string);
+		sprintf(string, " State: %d\n----------\n", state);
 		UARTSend (string);
 	}
 }
