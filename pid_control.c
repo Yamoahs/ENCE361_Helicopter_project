@@ -19,9 +19,19 @@
  * The Constants Kp, Ki are arbitrarily set to 1 for the example
  */
 
-static int desiredHeight = 0;
-static int desiredYaw = 0;
-double dt = SysCtlClockGet() / SYSTICK_RATE_HZ;
+#include "inc/hw_memmap.h"
+#include "inc/hw_types.h"
+#include "inc/hw_ints.h"
+#include "driverlib/adc.h"
+#include "driverlib/pwm.h"
+#include "driverlib/gpio.h"
+#include "driverlib/sysctl.h"
+#include "driverlib/systick.h"
+#include "driverlib/interrupt.h"
+#include "driverlib/debug.h"
+#include "pid_control.h"
+
+
 
 
 static double proportionalControl (double error, double, Kp)
@@ -87,5 +97,11 @@ void PIDControl(int currentHeight, int currrentYaw, double dt)
 
 	main_duty = altProportion + altIntergral + altDerivative;
 	tail_duty = yawProportion + yawIntergral + yawDerivative;
+
+	if(main_duty >= 98) main_duty = 98;
+	if(main_duty <= 2) main_duty = 2;
+
+	if(tail_duty >= 98) tail_duty = 98;
+	if(tail_duty >= 98) tail_duty = 2;
 
 }
