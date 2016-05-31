@@ -115,32 +115,33 @@ void ButtPressIntHandler (void)
 	// Compute the PWM period in terms of the PWM clock
 	    period = SysCtlClockGet () / PWM_DIVIDER / MOTOR_RATE_HZ;
 
-	if(ulUp == 0 && main_duty < 98){
+	if(ulUp == 0){// && main_duty < 98){
 		//main_duty += 10;
 		//if (main_duty >= 98) main_duty = 98;
 		//PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty /100);
-    desiredHeight += 10;
+		desiredHeight += 10;
 	}
 
-	if(ulDown == 0 && main_duty > 10){
+	//Might have to change the duty cycle down here
+	if(ulDown == 0){// && main_duty > 10){
 		//main_duty -= 10;
 		//if (main_duty <= 10) main_duty = 10;
 		//PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty /100);
-    desiredHeight -= 10;
+		desiredHeight -= 10;
 		}
 
-	if(ulCw == 0 && tail_duty < 98){
+	if(ulCw == 0){// && tail_duty < 98){
 		//tail_duty += 15;
 		//if (tail_duty >= 98) tail_duty = 98;
 		//PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
-    desiredYaw += 15;
+		desiredYaw += 15;
 		}
 
-	if(ulCCw == 0 && tail_duty > 10){
+	if(ulCCw == 0){// && tail_duty > 10){
 		//tail_duty -= 15;
 		//if (tail_duty <= 10) tail_duty = 10;
 		//PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
-    desiredYaw -= 15;
+		desiredYaw -= 15;
 		}
 
 	if(ulSelect == 0 && state == 0){
@@ -512,9 +513,9 @@ void displayInfo(int newHght, int inital, int height, int degrees)
 	if ((g_ulSampCnt % 25) == 0){
 		sprintf(string, " Main: %d Tail: %d\n----------\n", main_duty, tail_duty);
 		UARTSend (string);
-		sprintf(string, " Alt (%): %d\n----------\n", height);
+		sprintf(string, " Alt (%%): %d [%d]\n----------\n", desiredHeight, height);
 		UARTSend (string);
-		sprintf(string, " Yaw: %d\n----------\n", degrees);
+		sprintf(string, " Yaw: %d [%d]\n----------\n",desiredYaw, degrees);
 		UARTSend (string);
 		sprintf(string, " State: %d\n----------\n", state);
 		UARTSend (string);
@@ -560,8 +561,16 @@ int main(void)
 		if(initialRead != 0)
 		{
 			hgt_percent = calcHeight(initialRead, newHght);
-			displayInfo(newHght, (int)initialRead, hgt_percent, degrees);
+
 		}
-		PIDControl(hgt_percent, yaw, dt);
+		PIDControl(hgt_percent, desiredHeight, yaw, desiredYaw, dt, tail_duty, main_duty);
+		PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty / 100);
+		PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty / 100);
+		char string[40];
+		if ((g_ulSampCnt % 25) == 0){
+		sprintf(string, "PID Main : %d Tail: %d\n----------\n", main_duty, tail_duty);
+				UARTSend (string);
+		}
+		displayInfo(newHght, (int)initialRead, hgt_percent, degrees);
 	}
 }

@@ -22,15 +22,15 @@
 #include "driverlib/debug.h"
 
 /*Function Calculates the Proportional part of the PID Control*/
-static double proportionalControl (double error, double Kp);
+ double proportionalControl (double error, double Kp);
 
 /*Function Calculates the Intergral part of the PID Control*/
-static double integralControl (double error, double Ki, double dt);
+ double integralControl (double error, double Ki, double dt);
 
 /*Function Calculates the Derivative part of the PID Control*/
-static double derivativeControl (double error, double Kd, double dt);
+ double derivativeControl (double error, double prevError, double Kd, double dt);
 
 /*Function Combines Proportional, Intergral & Derivative parts of the PID Control*/
-void PIDControl(int currentHeight, int currrentYaw, double dt);
+void PIDControl(int currentHeight, int desiredHeight, int currrentYaw, int desiredYaw, double dt, int tail_duty, int main_duty);
 
 #endif /* PID_CONTROL_H_ */
