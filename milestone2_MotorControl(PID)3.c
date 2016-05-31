@@ -80,6 +80,8 @@ static volatile signed long yawErr = 0;
 static volatile signed long altErr = 0;
 
 
+enum states_t {IDLE, ORIENTATING, FLYING, LANDING} STATE;
+
 
 //******************************************************************************
 // The interrupt handler for the for SysTick interrupt.
@@ -133,28 +135,35 @@ void ButtPressIntHandler (void)
 		desiredHeight -= 10;
 		}
 
-	if(ulCw == 0){// && tail_duty < 98){
+	if(ulCw == 0  && STATE == FLYING){// && tail_duty < 98){
 		//tail_duty += 15;
 		//if (tail_duty >= 98) tail_duty = 98;
 		//PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
 		desiredYaw += 15;
 		}
 
-	if(ulCCw == 0){// && tail_duty > 10){
+	if(ulCCw == 0  && STATE == FLYING){// && tail_duty > 10){
 		//tail_duty -= 15;
 		//if (tail_duty <= 10) tail_duty = 10;
 		//PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
 		desiredYaw -= 15;
 		}
 
-	if(ulSelect == 0 && state == 0){
+	if(ulSelect == 0){
+		if (STATE == IDLE){
 			main_duty = MOTOR_DUTY_MAIN;
 			tail_duty = MOTOR_DUTY_TAIL;
 			PWMOutputState (PWM_BASE, PWM_OUT_1_BIT, true);
 			PWMOutputState (PWM_BASE, PWM_OUT_4_BIT, true);
 			PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty /100);
 			PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
-			state = 1;
+			STATE = ORIENTATING;
+		}
+		if (STATE == FLYING){
+			STATE = LANDING;
+			desiredHeight = 0;
+			desiredYaw = 0;
+		}
 	}
 
 	/*if(ulSelect == 0 && state == 1){
@@ -297,6 +306,28 @@ void YawChangeIntHandler (void)
 	yawCalc();
 }
 
+
+void refferenceInthandler(void)
+{
+	unsigned long refference;
+
+	// Clear the interrupt (documentation recommends doing this early)
+	GPIOPinIntClear (GPIO_PORTD_BASE, GPIO_PIN_0);
+
+	//Reads value at the pin
+	refference = GPIOPinRead (GPIO_PORTD_BASE, GPIO_PIN_0);
+	if (refference) {
+		if (STATE == ORIENTATING) {
+			yaw = 0;
+			STATE = FLYING;
+			}
+		if (STATE == LANDING) {
+			yaw = 0;
+		}
+	}
+}
+
+
 //******************************************************************************
 // The handler for the ADC conversion (height) complete interrupt.
 // Writes to the circular buffer.
@@ -364,6 +395,8 @@ void initYaw (void)
     // Register the handler for Port F into the vector table
     GPIOPortIntRegister (GPIO_PORTF_BASE, YawChangeIntHandler);
 
+    GPIOPortIntRegister (GPIO_PORTD_BASE, refferenceInthandler);
+
     // Enable and configure the port and pin used:  input on PF5: Pin 27 & PF7: Pin 29
     SysCtlPeripheralEnable (SYSCTL_PERIPH_GPIOF);
     GPIOPadConfigSet (GPIO_PORTF_BASE, GPIO_PIN_5 | GPIO_PIN_7, GPIO_STRENGTH_2MA,
@@ -375,6 +408,16 @@ void initYaw (void)
     // Enable the pin change interrupt
     GPIOPinIntEnable (GPIO_PORTF_BASE, GPIO_PIN_5 | GPIO_PIN_7);
     IntEnable (INT_GPIOF);	// Note: INT_GPIOF defined in inc/hw_ints.h
+
+
+    //Refference
+    GPIOPadConfigSet (GPIO_PORTD_BASE, GPIO_PIN_0, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPU);
+    //
+    // Set up the pin change interrupt (both edges)
+    GPIOIntTypeSet (GPIO_PORTD_BASE, GPIO_PIN_0, GPIO_BOTH_EDGES);
+    //
+    // Enable the pin change interrupt for PD0
+    GPIOPinIntEnable (GPIO_PORTD_BASE, GPIO_PIN_0);
 }
 
 //******************************************************************************
@@ -490,6 +533,7 @@ int yawToDeg ()
 
 // PID Control, controls the helicopters response to the pushbuttons.
 void PIDControl(int hgt_percent, double dt)
+
 {
 	static signed long yawErrPrev;
 	static signed long altErrPrev;
@@ -524,7 +568,7 @@ void PIDControl(int hgt_percent, double dt)
 	yawInt += yawErr;
 	altInt += altErr;
 	yawDer = (yawErr-yawErrPrev);
-	altDer = (altErr-altErrPrev) / dt;
+	altDer = (altErr-altErrPrev);
 
 
 	main_duty = 10 + kpAlt*altErr + kiAlt*altInt + kdAlt*altDer; //+ kiAlt*altInt/1000
@@ -543,6 +587,12 @@ void PIDControl(int hgt_percent, double dt)
 	}
 	if (tail_duty < 2) {
 		tail_duty = 2;
+	}
+
+	if (STATE == LANDING && yaw == 0 && hgt_percent == initialRead) {
+		PWMOutputState (PWM_BASE, PWM_OUT_4_BIT, false);
+		PWMOutputState (PWM_BASE, PWM_OUT_1_BIT, false);
+		STATE = IDLE;
 	}
 
 }
@@ -574,12 +624,22 @@ void displayInfo(int inital, int height, int degrees)
 	if ((g_ulSampCnt % 25) == 0){
 		sprintf(string, " Main: %d Tail: %d\n----------\n", main_duty, tail_duty);
 		UARTSend (string);
-		sprintf(string, " Alt (%%): %d [%d] {%d}\n----------\n", desiredHeight, height, altErr);
+		sprintf(string, " Alt (%%): %d [%d]\n----------\n", desiredHeight, height);
 		UARTSend (string);
 		sprintf(string, " Yaw: %d [%d]\n----------\n",desiredYaw, degrees);
 		UARTSend (string);
 		sprintf(string, " State: %d\n----------\n", state);
 		UARTSend (string);
+
+		if (STATE == ORIENTATING) {
+			UARTSend ("STATE = ORIENTATING\n");
+		}
+		if (STATE == FLYING) {
+			UARTSend ("STATE = FLYING\n");
+		}
+		if (STATE == LANDING) {
+			UARTSend ("STATE = LANDING\n");
+		}
 	}
 }
 
@@ -590,6 +650,8 @@ int main(void)
 	int current = 0;
 	int hgt_percent = 0;
 	int degrees = 0;
+
+	STATE = IDLE;
 
 
 	initClock();
@@ -626,10 +688,11 @@ int main(void)
 			hgt_percent = calcHeight(initialRead, newHght);
 
 		}
-		//PIDControl(hgt_percent, desiredHeight, yaw, desiredYaw, dt, tail_duty, main_duty);
+		if (STATE == FLYING || STATE == LANDING) {
 		PIDControl(hgt_percent, SysCtlClockGet() / SYSTICK_RATE_HZ);
 		PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty / 100);
 		PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty / 100);
+		}
 
 		displayInfo((int)initialRead, hgt_percent, degrees);
 	}
