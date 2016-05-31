@@ -31,6 +31,7 @@
 #include "stdlib.h"
 #include "buttonSet.h"
 #include "button.h"
+#include "pid_control.h"
 
 //******************************************************************************
 // Constants
@@ -71,6 +72,10 @@ static volatile signed int main_duty = 0;
 static volatile signed int tail_duty = 0;
 int state = 0;
 unsigned long period;
+
+static int desiredHeight = 0;
+static int desiredYaw = 0;
+
 
 
 //******************************************************************************
@@ -537,6 +542,7 @@ int main(void)
 	while (1)
 	{
 		degrees = yawToDeg();
+		double dt = SysCtlClockGet() / SYSTICK_RATE_HZ;
 
 		// Background task: calculate the (approximate) mean of the values in the
 		// circular buffer and display it.
@@ -552,5 +558,6 @@ int main(void)
 			hgt_percent = calcHeight(initialRead, newHght);
 			displayInfo(newHght, (int)initialRead, hgt_percent, degrees);
 		}
+		PIDControl(hgt_percent, yaw, dt);
 	}
 }
