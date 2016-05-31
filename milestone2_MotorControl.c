@@ -116,27 +116,31 @@ void ButtPressIntHandler (void)
 	    period = SysCtlClockGet () / PWM_DIVIDER / MOTOR_RATE_HZ;
 
 	if(ulUp == 0 && main_duty < 98){
-		main_duty += 10;
-		if (main_duty >= 98) main_duty = 98;
-		PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty /100);
+		//main_duty += 10;
+		//if (main_duty >= 98) main_duty = 98;
+		//PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty /100);
+    desiredHeight += 10;
 	}
 
 	if(ulDown == 0 && main_duty > 10){
-		main_duty -= 10;
-		if (main_duty <= 10) main_duty = 10;
-		PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty /100);
+		//main_duty -= 10;
+		//if (main_duty <= 10) main_duty = 10;
+		//PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty /100);
+    desiredHeight -= 10;
 		}
 
 	if(ulCw == 0 && tail_duty < 98){
-		tail_duty += 15;
-		if (tail_duty >= 98) tail_duty = 98;
-		PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
+		//tail_duty += 15;
+		//if (tail_duty >= 98) tail_duty = 98;
+		//PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
+    desiredYaw += 15;
 		}
 
 	if(ulCCw == 0 && tail_duty > 10){
-		tail_duty -= 15;
-		if (tail_duty <= 10) tail_duty = 10;
-		PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
+		//tail_duty -= 15;
+		//if (tail_duty <= 10) tail_duty = 10;
+		//PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
+    desiredYaw -= 15;
 		}
 
 	if(ulSelect == 0 && state == 0){
