@@ -1,13 +1,12 @@
-//************************************************************************
-//
-//pid_control.c - A PID Control system that will control the duty cycle of
-//				  the Tail and Main Motor Output
-//
-// Author:  Samuel Yamoah
-// Date Created: 25.5.2016
-// Last modified: 31.5.2016
-//
-//************************************************************************
+/*******************************************************************************
+@file			pid_control.c
+@author		Samuel Yamoah
+@date			25.05.2016
+@modified	31.05.2016
+@brief		 A PID Control system that will control the duty cycle of the Tail
+ 					 and Main Motor Output
+*******************************************************************************/
+
 /*Proportional (P): c(t) = Kpe(t)
  * Proportional-Intergral-Derivative(PID): c(t) = Kpe(t) + Ki
  *

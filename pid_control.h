@@ -1,9 +1,10 @@
-/*
- @file		pid_control.h
- @author	Samuel Yamoah
- @date		31.05.2016
+/*******************************************************************************
+ @file	   	pid_control.h
+ @author	  Samuel Yamoah
+ @date		  31.05.2016
+ @modified  31.05.2016
  @brief		Module calculates the PID Control for the duty cyvle of the motors*
- */
+ ******************************************************************************/
 
 #ifndef PID_CONTROL_H_
 #define PID_CONTROL_H_
@@ -20,17 +21,16 @@
 #include "driverlib/interrupt.h"
 #include "driverlib/debug.h"
 
-
+/*Function Calculates the Proportional part of the PID Control*/
 static double proportionalControl (double error, double Kp);
 
-
-
+/*Function Calculates the Intergral part of the PID Control*/
 static double integralControl (double error, double Ki, double dt);
 
-
+/*Function Calculates the Derivative part of the PID Control*/
 static double derivativeControl (double error, double Kd, double dt);
 
-
+/*Function Combines Proportional, Intergral & Derivative parts of the PID Control*/
 void PIDControl(int currentHeight, int currrentYaw, double dt);
 
 #endif /* PID_CONTROL_H_ */
