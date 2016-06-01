@@ -39,7 +39,7 @@
 #define DEGREES 360
 #define STATES_ON_DISC 448
 
-#define BUF_SIZE 100
+#define BUF_SIZE 2
 #define SAMPLE_RATE_HZ 10000
 #define MILLI_VOLT 1000
 
@@ -529,6 +529,8 @@ void PIDControl(int hgt_percent, double dt)
 
 	main_duty = 10 + kpAlt*altErr + kiAlt*altInt + kdAlt*altDer; //+ kiAlt*altInt/1000
 	tail_duty = ((main_duty * 40)/50) + kpYaw*yawErr + kiYaw*yawInt + kdYaw*yawDer; //+ (kiYaw*yawInt)/100000
+	if(hgt_percent == desiredHeight) altInt = 0;
+	if(yaw == desiredYaw) yawInt = 0;
 
 	// controlling the duty cycle for the motors so that they are between the specified percentages
 
@@ -556,17 +558,18 @@ void displayInfo(int inital, int height, int degrees)
 {
 	char string[40];
 
-	sprintf(string, "prev state: %3d ", previousState);
+	sprintf(string, " Main: %d Tail: %d", main_duty, tail_duty);
 	RIT128x96x4StringDraw(string, 5, 14, 15);
-	sprintf(string, "curr state: %3d ", currentState);
+	sprintf(string,"Alt (%%): %d [%d] {%d}", desiredHeight, height, altErr);
 	RIT128x96x4StringDraw(string, 5, 24, 15);
+	sprintf(string,"altErr {%d}", altErr);
+	RIT128x96x4StringDraw(string, 5, 34, 15);
 
-	sprintf(string, "Init. Hgt = %3dmV ", inital);
-	RIT128x96x4StringDraw(string, 5, 44, 15);
-	sprintf(string, "Hgt. (%%) = %d%%    ", height);
+
+	sprintf (string," Yaw: %d [%d]",desiredYaw, degrees);
 	RIT128x96x4StringDraw(string, 5, 64, 15);
 
-	sprintf (string, "yaw: %5d", yaw);
+	sprintf (string, " State: %d", state);
 	RIT128x96x4StringDraw (string, 5, 74, 15);
 	sprintf (string, "Deg = %4d", degrees);
 	RIT128x96x4StringDraw (string, 5, 84, 15);
@@ -574,7 +577,7 @@ void displayInfo(int inital, int height, int degrees)
 	if ((g_ulSampCnt % 25) == 0){
 		sprintf(string, " Main: %d Tail: %d\n----------\n", main_duty, tail_duty);
 		UARTSend (string);
-		sprintf(string, " Alt (%%): %d [%d] {%d}\n----------\n", desiredHeight, height, altErr);
+		sprintf(string, "Alt (%%): %d [%d] {%d}\n----------\n", desiredHeight, height, altErr);
 		UARTSend (string);
 		sprintf(string, " Yaw: %d [%d]\n----------\n",desiredYaw, degrees);
 		UARTSend (string);
