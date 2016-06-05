@@ -33,12 +33,11 @@
 #include "button.h"
 #include "pid_control.h"
 #include "yaw_control.h"
+#include "display.h"
 
 //******************************************************************************
 // Constants
 //******************************************************************************
-//#define DEGREES 360
-//#define STATES_ON_DISC 448
 
 #define BUF_SIZE 2
 #define SAMPLE_RATE_HZ 10000
@@ -55,7 +54,7 @@
 #define MOTOR_DUTY_MAIN 10
 #define MOTOR_DUTY_TAIL 10
 
-#define BAUD_RATE 9600ul
+//#define BAUD_RATE 9600ul
 
 //******************************************************************************
 // Global variables
@@ -71,7 +70,7 @@ int initialRead = 0; 	// Initial voltage read to calibrate the minimum height of
 
 static volatile signed int main_duty = 0;
 static volatile signed int tail_duty = 0;
-int state = 0;
+
 unsigned long period;
 
 static int desiredHeight = 0;
@@ -148,14 +147,14 @@ void ButtPressIntHandler (void)
 		desiredYaw -= 15;
 		}
 
-	if(ulSelect == 0 && state == 0){
+	if(ulSelect == 0){
 			main_duty = MOTOR_DUTY_MAIN;
 			tail_duty = MOTOR_DUTY_TAIL;
 			PWMOutputState (PWM_BASE, PWM_OUT_1_BIT, true);
 			PWMOutputState (PWM_BASE, PWM_OUT_4_BIT, true);
 			PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty /100);
 			PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
-			state = 1;
+
 	}
 
 	/*if(ulSelect == 0 && state == 1){
@@ -183,47 +182,6 @@ void intButton (void)
 	GPIOPinIntEnable (GPIO_PORTB_BASE, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6);
 
 }
-
-//**********************************************************************
-// Initialise UART0 - 8 bits, 1 stop bit, no parity
-//**********************************************************************
-initConsole (void)
-{
-    //
-    // Enable GPIO port A which is used for UART0 pins.
-    //
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-    //
-    // Select the alternate (UART) function for these pins.
-    //
-    GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
-    UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(), BAUD_RATE,
-                        (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
-                         UART_CONFIG_PAR_NONE));
-    UARTFIFOEnable(UART0_BASE);
-    UARTEnable(UART0_BASE);
-}
-
-//**********************************************************************
-// Transmit a string via UART0
-//**********************************************************************
-void
-UARTSend (char *pucBuffer)
-{
-    //
-    // Loop while there are more characters to send.
-    //
-    while(*pucBuffer)
-    {
-        //
-        // Write the next character to the UART Tx FIFO.
-        //
-        UARTCharPut(UART0_BASE, *pucBuffer);
-        pucBuffer++;
-    }
-}
-
 
 //******************************************************************************
 // The interrupt handler for the for the pin change interrupt. Note that
@@ -398,13 +356,13 @@ initMotorPin (void)
     GPIOPinTypePWM (GPIO_PORTD_BASE, GPIO_PIN_1);
     GPIOPinTypePWM (GPIO_PORTF_BASE, GPIO_PIN_2);
 }
-
+/*
 void
 initDisplay (void)
 {
   // intialise the OLED display
   RIT128x96x4Init(1000000);
-}
+}*/
 
 //******************************************************************
 // Initialise the PWM generator (PWM1 & PWM4)
@@ -453,55 +411,7 @@ int calcHeight(int reference, int current)
 	return height;
 }
 
-//******************************************************************************
-//The yaw is converted to degrees based on the number of slots on the encoder
-// disc (can be adapted to other encoder discs). STATES_ON_DISC is = no. of
-// states (4) * slots on the disc (112).
-//******************************************************************************
-/*int yawToDeg ()
-{
-	int deg = 0;
-	deg = ((yaw * DEGREES + (STATES_ON_DISC / 2)) / STATES_ON_DISC);
 
-	return deg;
-}*/
-
-
-//*****************************************************************************
-// Function to display the displays the current height (mili Volts), reference
-// height (mili Volts) and the current height as a percentage.
-//*****************************************************************************
-void displayInfo(int inital, int height, int degrees)
-{
-	char string[40];
-
-	sprintf(string, " Main: %d Tail: %d", main_duty, tail_duty);
-	RIT128x96x4StringDraw(string, 5, 14, 15);
-	sprintf(string,"Alt (%%): %d [%d] {%d}", desiredHeight, height, altError);
-	RIT128x96x4StringDraw(string, 5, 24, 15);
-	sprintf(string,"altError {%d}", altError);
-	RIT128x96x4StringDraw(string, 5, 34, 15);
-
-
-	sprintf (string," Yaw: %d [%d]",desiredYaw, degrees);
-	RIT128x96x4StringDraw(string, 5, 64, 15);
-
-	sprintf (string, " State: %d", state);
-	RIT128x96x4StringDraw (string, 5, 74, 15);
-	sprintf (string, "Deg = %4d", degrees);
-	RIT128x96x4StringDraw (string, 5, 84, 15);
-
-	if ((g_ulSampCnt % 25) == 0){
-		sprintf(string, " Main: %d Tail: %d\n----------\n", main_duty, tail_duty);
-		UARTSend (string);
-		sprintf(string, "Alt (%%): %d [%d] {%d}\n----------\n", desiredHeight, height, altError);
-		UARTSend (string);
-		sprintf(string, " Yaw: %d [%d]\n----------\n",desiredYaw, degrees);
-		UARTSend (string);
-		sprintf(string, " State: %d\n----------\n", state);
-		UARTSend (string);
-	}
-}
 
 int main(void)
 {
@@ -553,6 +463,6 @@ int main(void)
 		PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty / 100);
 		PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty / 100);
 
-		displayInfo((int)initialRead, hgt_percent, degrees);
+		displayInfo((int)initialRead, hgt_percent, degrees, g_ulSampCnt, altError, desiredHeight, desiredYaw, main_duty, tail_duty);
 	}
 }
