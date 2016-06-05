@@ -32,12 +32,13 @@
 #include "buttonSet.h"
 #include "button.h"
 #include "pid_control.h"
+#include "yaw_control.h"
 
 //******************************************************************************
 // Constants
 //******************************************************************************
-#define DEGREES 360
-#define STATES_ON_DISC 448
+//#define DEGREES 360
+//#define STATES_ON_DISC 448
 
 #define BUF_SIZE 2
 #define SAMPLE_RATE_HZ 10000
@@ -225,29 +226,6 @@ UARTSend (char *pucBuffer)
 
 
 //******************************************************************************
-// Determines the yaw movement based on state changes. If the state change
-// between previousState and currentState is a positive increment, then yaw is
-// is increased. If the currentState is the same as the previousState then no
-// change in yaw else yaw is decreased.
-//******************************************************************************
-void yawCalc (void)
-{
-	if (previousState == 1 && currentState == 2 || previousState == 2 && currentState == 3
-		|| previousState == 3 && currentState == 4 || previousState == 4 && currentState == 1)
-	{
-		yaw++;
-	}
-	else if (currentState == previousState)
-	{
-		yaw = yaw;
-	}
-	else
-	{
-		yaw--;
-	}
-}
-
-//******************************************************************************
 // The interrupt handler for the for the pin change interrupt. Note that
 //  the SysTick counter is decrementing.
 //******************************************************************************
@@ -294,7 +272,7 @@ void YawChangeIntHandler (void)
 		}
 	}
 
-	yawCalc();
+	yawCalc(previousState, currentState, yaw);
 }
 
 //******************************************************************************
@@ -480,13 +458,13 @@ int calcHeight(int reference, int current)
 // disc (can be adapted to other encoder discs). STATES_ON_DISC is = no. of
 // states (4) * slots on the disc (112).
 //******************************************************************************
-int yawToDeg ()
+/*int yawToDeg ()
 {
 	int deg = 0;
 	deg = ((yaw * DEGREES + (STATES_ON_DISC / 2)) / STATES_ON_DISC);
 
 	return deg;
-}
+}*/
 
 
 //*****************************************************************************
@@ -551,7 +529,7 @@ int main(void)
 	while (1)
 	{
 		//double dt = SysCtlClockGet() / SYSTICK_RATE_HZ;
-		degrees = yawToDeg();
+		degrees = yawToDeg(yaw);
 
 
 		// Background task: calculate the (approximate) mean of the values in the
