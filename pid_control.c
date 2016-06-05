@@ -37,19 +37,19 @@
 
 // PID Control, controls the helicopters response to the pushbuttons.
 void PIDControl(int hgt_percent, double dt, long yawError, long altError,
-                int main_duty, int tail_duty, int desiredYaw, int desiredHeight)
+                int main_duty, int tail_duty, int desiredYaw, int desiredHeight, int yaw)
 {
 	static signed long yawErrorPrev;
-  static signed long yawIntegral;
-  static signed long yawDerivative;
+	static signed long yawIntegral;
+	static signed long yawDerivative;
 	static signed long altErrorPrev;
 	static signed long altIntegral;
 	static signed long altDerivative;
 
 	// initialising the gain variables
 	float altKp;
-  float altKi;
-  float altKd;
+	float altKi;
+	float altKd;
 	float yawKp;
 	float yawKi;
 	float yawKd;

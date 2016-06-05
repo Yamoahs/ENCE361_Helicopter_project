@@ -25,6 +25,6 @@
  dt. YawError, altError, main_duty, tail_duty, desiredYaw & desiredHeight are
  all globals in the main program.*/
 void PIDControl(int hgt_percent, double dt, long yawError, long altError,
-                int main_duty, int tail_duty, int desiredYaw, int desiredHeight)
+                int main_duty, int tail_duty, int desiredYaw, int desiredHeight, int yaw);
 
 #endif /* PID_CONTROL_H_ */
