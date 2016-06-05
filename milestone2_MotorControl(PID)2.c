@@ -31,7 +31,7 @@
 #include "stdlib.h"
 #include "buttonSet.h"
 #include "button.h"
-//#include "pid_control.h"
+#include "pid_control.h"
 
 //******************************************************************************
 // Constants
@@ -488,66 +488,6 @@ int yawToDeg ()
 	return deg;
 }
 
-// PID Control, controls the helicopters response to the pushbuttons.
-void PIDControl(int hgt_percent, double dt)
-{
-	static signed long yawErrorPrev;
-  static signed long yawIntegral;
-  static signed long yawDerivative;
-	static signed long altErrorPrev;
-	static signed long altIntegral;
-	static signed long altDerivative;
-
-	// initialising the gain variables
-	float altKp;
-  float altKi;
-  float altKd;
-	float yawKp;
-	float yawKi;
-	float yawKd;
-
-	// PID gain values
-	altKp = 0.5; // altitude proportional gain, decreases the response to system disturbances
-	altKi = 0.0009; // altitude integral gain, eliminates steady state error
-	altKd = 0.8; // altitude derivative gain, accounts for overshoot produced by ki and kp
-
-	yawKp = 0.6; // yaw proportional gain, decreases the response to system disturbances
-	yawKi = 0.009; // yaw integral gain, eliminates steady state error
-	yawKd = 2.5; // yaw derivative gain, accounts for overshoot produced by ki and kp
-
-	altErrorPrev = altError;
-	yawErrorPrev = yawError;
-
-	altError = desiredHeight - hgt_percent; // positive if up
-	yawError = desiredYaw - yaw; // positive if cw
-
-	yawIntegral += yawError;
-	altIntegral += altError;
-	yawDerivative = (yawError-yawErrorPrev);
-	altDerivative = (altError-altErrorPrev) / dt;
-
-
-	main_duty = 10 + altKp*altError + altKi*altIntegral + altKd*altDerivative;
-	tail_duty = ((main_duty * 40)/50) + yawKp*yawError + yawKi*yawIntegral + yawKd*yawDerivative;
-	if(hgt_percent == desiredHeight) altIntegral = 0;
-	if(yaw == desiredYaw) yawIntegral = 0;
-
-	// controlling the duty cycle for the motors so that they are between the specified percentages
-	if (main_duty > 98) {
-		main_duty = 98;
-	}
-	if (tail_duty > 98) {
-		tail_duty = 98;
-	}
-	if (main_duty < 2) {
-		main_duty = 2;
-	}
-	if (tail_duty < 2) {
-		tail_duty = 2;
-	}
-
-}
-
 
 //*****************************************************************************
 // Function to display the displays the current height (mili Volts), reference
@@ -629,7 +569,9 @@ int main(void)
 
 		}
 		//PIDControl(hgt_percent, desiredHeight, yaw, desiredYaw, dt, tail_duty, main_duty);
-		PIDControl(hgt_percent, SysCtlClockGet() / SYSTICK_RATE_HZ);
+		//PIDControl(hgt_percent, SysCtlClockGet() / SYSTICK_RATE_HZ);
+		PIDControl(hgt_percent, SysCtlClockGet() / SYSTICK_RATE_HZ, yawError, altError, main_duty, tail_duty, desiredYaw, desiredHeight, yaw);
+
 		PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty / 100);
 		PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty / 100);
 
