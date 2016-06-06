@@ -29,17 +29,19 @@
 #include "utils/circBuf.h"
 #include "stdio.h"
 #include "stdlib.h"
-#include "buttonSet.h"
-#include "button.h"
+
+#include "my_buttons.h"
 #include "pid_control.h"
 #include "yaw_control.h"
 #include "display.h"
+#include "motor.h"
+
 
 //******************************************************************************
 // Constants
 //******************************************************************************
 
-#define BUF_SIZE 2
+#define BUF_SIZE 100
 #define SAMPLE_RATE_HZ 10000
 #define MILLI_VOLT 1000
 
@@ -48,13 +50,7 @@
 #define ADC_TO_MILLIS(adc) (((adc) * ADC_REF) / ADC_MAX)
 
 #define SYSTICK_RATE_HZ 1000ul
-#define MOTOR_RATE_HZ 200
-#define PWM_DIV_CODE SYSCTL_PWMDIV_4
-#define PWM_DIVIDER 4
-#define MOTOR_DUTY_MAIN 10
-#define MOTOR_DUTY_TAIL 10
 
-//#define BAUD_RATE 9600ul
 
 //******************************************************************************
 // Global variables
@@ -118,32 +114,20 @@ void ButtPressIntHandler (void)
 	// Compute the PWM period in terms of the PWM clock
 	    period = SysCtlClockGet () / PWM_DIVIDER / MOTOR_RATE_HZ;
 
-	if(ulUp == 0){// && main_duty < 98){
-		//main_duty += 10;
-		//if (main_duty >= 98) main_duty = 98;
-		//PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty /100);
+	if(ulUp == 0){
 		desiredHeight += 10;
 	}
 
-	//Might have to change the duty cycle down here
-	if(ulDown == 0){// && main_duty > 10){
-		//main_duty -= 10;
-		//if (main_duty <= 10) main_duty = 10;
-		//PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty /100);
+
+	if(ulDown == 0){
 		desiredHeight -= 10;
 		}
 
-	if(ulCw == 0){// && tail_duty < 98){
-		//tail_duty += 15;
-		//if (tail_duty >= 98) tail_duty = 98;
-		//PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
+	if(ulCw == 0){
 		desiredYaw += 15;
 		}
 
-	if(ulCCw == 0){// && tail_duty > 10){
-		//tail_duty -= 15;
-		//if (tail_duty <= 10) tail_duty = 10;
-		//PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
+	if(ulCCw == 0){
 		desiredYaw -= 15;
 		}
 
@@ -156,12 +140,6 @@ void ButtPressIntHandler (void)
 			PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty /100);
 
 	}
-
-	/*if(ulSelect == 0 && state == 1){
-		PWMOutputState (PWM_BASE, PWM_OUT_1_BIT, false);
-		PWMOutputState (PWM_BASE, PWM_OUT_4_BIT, false);
-			state = 0;
-		}*/
 
 	if(ulReset == 0){
 		if (!ulReset) SysCtlReset();
@@ -345,58 +323,6 @@ void initADC (void)
   ADCIntEnable(ADC0_BASE, 3);
 }
 
-//******************************************************************
-// Initialise the GPIO for the PWM output (Port D and Port F)
-//******************************************************************
-void
-initMotorPin (void)
-{
-    SysCtlPeripheralEnable (SYSCTL_PERIPH_GPIOD);
-    SysCtlPeripheralEnable (SYSCTL_PERIPH_GPIOF);
-    GPIOPinTypePWM (GPIO_PORTD_BASE, GPIO_PIN_1);
-    GPIOPinTypePWM (GPIO_PORTF_BASE, GPIO_PIN_2);
-}
-/*
-void
-initDisplay (void)
-{
-  // intialise the OLED display
-  RIT128x96x4Init(1000000);
-}*/
-
-//******************************************************************
-// Initialise the PWM generator (PWM1 & PWM4)
-//******************************************************************
-void
-initPWMchan (void)
-{
-	unsigned long period;
-
-    SysCtlPeripheralEnable (SYSCTL_PERIPH_PWM);
-    //
-    // Compute the PWM period based on the system clock.
-    //
-        SysCtlPWMClockSet (PWM_DIV_CODE);
-
-    PWMGenConfigure (PWM_BASE, PWM_GEN_0, PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC);
-    PWMGenConfigure (PWM_BASE, PWM_GEN_2, PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC);
-    period = SysCtlClockGet () / PWM_DIVIDER / MOTOR_RATE_HZ;
-    PWMGenPeriodSet (PWM_BASE, PWM_GEN_0, period);
-    PWMGenPeriodSet (PWM_BASE, PWM_GEN_2, period);
-    PWMPulseWidthSet (PWM_BASE, PWM_OUT_1, period * main_duty / 100);
-    PWMPulseWidthSet (PWM_BASE, PWM_OUT_4, period * tail_duty / 100);
-    //
-    // Enable the PWM output signal.
-    //
-    PWMOutputState (PWM_BASE, PWM_OUT_1_BIT, false);
-    PWMOutputState (PWM_BASE, PWM_OUT_4_BIT, false);
-    //
-    // Enable the PWM generator.
-    //
-    PWMGenEnable (PWM_BASE, PWM_GEN_0);
-    PWMGenEnable (PWM_BASE, PWM_GEN_2);
-}
-
 
 //******************************************************************************
 //Calculates the current height of the helicopter as a ratio based on the
@@ -410,7 +336,6 @@ int calcHeight(int reference, int current)
 
 	return height;
 }
-
 
 
 int main(void)
@@ -429,7 +354,7 @@ int main(void)
 	initDisplay();
 	intButton();
 	initConsole();
-	initPWMchan();
+	initPWMchan(main_duty, tail_duty);
 	initCircBuf (&g_inBuffer, BUF_SIZE);
 
 
