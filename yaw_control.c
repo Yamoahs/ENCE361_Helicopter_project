@@ -24,7 +24,11 @@
 #include "utils/circBuf.h"
 #include "stdio.h"
 #include "stdlib.h"
+
+
+#include "pid_control.h"
 #include "yaw_control.h"
+#include "display.h"
 
 
 //******************************************************************************
