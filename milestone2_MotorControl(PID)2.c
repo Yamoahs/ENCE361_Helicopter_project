@@ -36,6 +36,7 @@
 #include "display.h"
 #include "motor.h"
 #include "altitude.h"
+#include "clock.h"
 
 //******************************************************************************
 // Constants
@@ -67,20 +68,6 @@ static int desiredYaw = 0;
 static volatile signed long yawError = 0;
 static volatile signed long altError = 0;
 
-
-
-//******************************************************************************
-// The interrupt handler for the for SysTick interrupt.
-//******************************************************************************
-
-void SysTickIntHandler(void)
-{
-    // Initiate a conversion
-    ADCProcessorTrigger(ADC0_BASE, 3);
-
-    //Polls display on UART0 and Counter For interrupts
-    g_ulSampCnt++;
-}
 
 void ButtPressIntHandler (void)
 {
@@ -201,30 +188,6 @@ void YawChangeIntHandler (void)
 	}
 
 	yawCalc(previousState, currentState, yaw);
-}
-
-//*****************************************************************************
-// Initialisation functions for the clock (incl. SysTick), ADC, display
-//*****************************************************************************
-void initClock (void)
-{
-  // Set the clock rate. From Section 19.1 in stellaris_peripheral_lib_UG.doc:
-  //  "In order to use the ADC, the PLL must be used; the PLL output will be
-  //  used to create the clock required by the ADC." ADC rate = 8 MHz / 10.
-  //  The processor clock rate = 20 MHz.
-  SysCtlClockSet(SYSCTL_SYSDIV_10 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN |
-                   SYSCTL_XTAL_8MHZ);
-
-  // Set up the period for the SysTick timer.  The SysTick timer period is
-  // set as a function of the system clock.
-  SysTickPeriodSet(SysCtlClockGet() / SAMPLE_RATE_HZ);
-
-  // Register the interrupt handler
-  SysTickIntRegister(SysTickIntHandler);
-  //
-  // Enable interrupt and device
-  SysTickIntEnable();
-  SysTickEnable();
 }
 
 // *****************************************************************************
