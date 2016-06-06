@@ -20,8 +20,14 @@
 #include "drivers/rit128x96x4.h"
 #include "utils/uartstdio.h"
 #include "utils/ustdlib.h"
+#include "utils/isqrt.h"
+#include "utils/circBuf.h"
 #include "stdio.h"
 #include "stdlib.h"
+
+
+#include "pid_control.h"
+#include "yaw_control.h"
 #include "display.h"
 
 //**********************************************************************

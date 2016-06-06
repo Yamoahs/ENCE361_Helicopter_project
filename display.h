@@ -23,6 +23,8 @@
 #include "drivers/rit128x96x4.h"
 #include "utils/uartstdio.h"
 #include "utils/ustdlib.h"
+#include "utils/isqrt.h"
+#include "utils/circBuf.h"
 #include "stdio.h"
 #include "stdlib.h"
 
