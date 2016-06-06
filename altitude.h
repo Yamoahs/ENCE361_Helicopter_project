@@ -30,7 +30,6 @@
 
 
 #define BUF_SIZE 100
-#define SAMPLE_RATE_HZ 10000
 #define MILLI_VOLT 1000
 
 #define ADC_REF 3000
