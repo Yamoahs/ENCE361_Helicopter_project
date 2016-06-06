@@ -1,9 +1,9 @@
 /*******************************************************************************
 @file			display.h
-@author			Samuel Yamoah
+@author		Samuel Yamoah
 @date			05.06.2016
-@modified		05.06.2016
-@brief			Set up of the UART Display and Stellaris
+@modified	07.06.2016
+@brief		Set up of the UART Display and Stellaris
 *******************************************************************************/
 
 #ifndef SERIAL_H_
@@ -31,17 +31,18 @@
 #define BAUD_RATE 9600ul
 
 
+/*Initialise UART0 - 8 bits, 1 stop bit, no parity*/
 void initConsole (void);
 
-
+/*Transmit a string via UART0*/
 void UARTSend (char *pucBuffer);
 
+/* intialise the OLED display*/
 void initDisplay (void);
 
-//*****************************************************************************
-// Function to display the displays the current height (mili Volts), reference
-// height (mili Volts) and the current height as a percentage.
-//*****************************************************************************
-void displayInfo(int inital, int height, int degrees, long g_ulSampCnt, long altError, int desiredHeight, int desiredYaw, int main_duty, int tail_duty);
+/* Function to display the displays the current height (mili Volts), reference
+ height (mili Volts) and the current height as a percentage.*/
+void displayInfo(int inital, int height, int degrees, long g_ulSampCnt,
+   long altError, int desiredHeight, int desiredYaw, int main_duty, int tail_duty);
 
 #endif /* SERIAL_H_ */

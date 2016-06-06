@@ -1,13 +1,10 @@
 //*****************************************************************************
 //
-// Milestone2_MotorControl.c - Simple interrupt driven program which samples with ADC0 to
-// calculate the height of the helicopter and also yaw detection with an encoder
-// on PF5 (pin 27) & PF7 (pin 29)
-//		***  Version 2 - Calculates Reference based on newHght ***
+// Main Program for helicopter that calls modules
 //
 // Author:  Samuel Yamoah
 // Date Created: 20.5.2016
-// Last modified: 30.5.2016
+// Last modified: 07.6.2016
 //
 //*****************************************************************************
 
@@ -95,7 +92,7 @@ int main(void)
 
 	while (1)
 	{
-		//double dt = SysCtlClockGet() / SYSTICK_RATE_HZ;
+	
 		degrees = yawToDeg(yaw);
 
 

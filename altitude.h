@@ -2,8 +2,8 @@
 @file			altitude.h
 @author		Samuel Yamoah
 @date			06.06.2016
-@modified	06.06.2016
-@brief		 Initialising ADC and height conversion sensor
+@modified	07.06.2016
+@brief		Initialising ADC and height conversion sensor
 *******************************************************************************/
 
 #ifndef ALTITUDE_H_
@@ -36,10 +36,15 @@
 #define ADC_MAX 1023
 #define ADC_TO_MILLIS(adc) (((adc) * ADC_REF) / ADC_MAX)
 
+/* The handler for the ADC conversion (height) complete interrupt. Writes to the
+ circular buffer.*/
 void HeightIntHandler(void);
 
+/*Initialise the ADC*/
 void initADC (void);
 
+/*Calculates the current height of the helicopter as a ratio based on the
+ reference and the current height. The returned value is a percentage.*/
 int calcHeight(int reference, int current);
 
 #endif /* ALTITUDE_H_ */

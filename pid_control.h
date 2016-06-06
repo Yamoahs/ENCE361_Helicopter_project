@@ -1,8 +1,8 @@
 /*******************************************************************************
- @file	   	pid_control.h
- @author	  Samuel Yamoah
- @date		  31.05.2016
- @modified  03.06.2016
+ @file	  pid_control.h
+ @author	Samuel Yamoah
+ @date		31.05.2016
+@modified	07.06.2016
  @brief		Module calculates the PID Control for the duty cyvle of the motors*
  ******************************************************************************/
 

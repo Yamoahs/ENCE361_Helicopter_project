@@ -2,8 +2,8 @@
 @file			motor.h
 @author		Samuel Yamoah
 @date			06.06.2016
-@modified	06.06.2016
-@brief		 Initialising PWM for the tail and main Motor output
+@modified	07.06.2016
+@brief		Initialising PWM for the tail and main Motor output
 *******************************************************************************/
 
 #ifndef MOTOR_H_
@@ -35,9 +35,10 @@
 #define MOTOR_DUTY_MAIN 10
 #define MOTOR_DUTY_TAIL 10
 
-
+/*Initialising the pins for motor output*/
 void initMotorPin (void);
 
+/*Initialise the PWM generator (PWM1 & PWM4)*/
 void initPWMchan (signed int main_duty, signed int tail_duty);
 
 

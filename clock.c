@@ -2,8 +2,8 @@
 @file			clock.c
 @author		Samuel Yamoah
 @date			06.06.2016
-@modified	06.06.2016
-@brief		 Initialising Microprocessor Clock
+@modified	07.06.2016
+@brief		Initialising Microprocessor Clock
 *******************************************************************************/
 #include "inc/hw_memmap.h"
 #include "inc/hw_types.h"
@@ -29,7 +29,7 @@
 
 
 unsigned long g_ulSampCnt;	// Counter for the interrupts
-
+/*SysTick interrupt Handler*/
 void SysTickIntHandler(void)
 {
     // Initiate a conversion

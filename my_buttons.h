@@ -2,9 +2,9 @@
 @file			my_buttons.h
 @author		Samuel Yamoah
 @date			06.06.2016
-@modified	06.06.2016
-@brief		 Initialising and controlling the output of the virtual Buttons on
-			port B
+@modified	07.06.2016
+@brief		Initialising and controlling the output of the virtual Buttons on
+					port B
 *******************************************************************************/
 
 #ifndef MY_BUTTONS_H_

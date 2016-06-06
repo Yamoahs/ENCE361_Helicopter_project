@@ -1,9 +1,10 @@
-/*
- * globals.h
- *
- *  Created on: Jun 5, 2016
- *      Author: sya57
- */
+/*******************************************************************************
+@file			globals.h
+@author		Samuel Yamoah
+@date			05.06.2016
+@modified	07.06.2016
+@brief		Global variables that get used by multiple  odules
+*******************************************************************************/
 
 #ifndef GLOBALS_H_
 #define GLOBALS_H_

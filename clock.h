@@ -1,9 +1,9 @@
 /*******************************************************************************
-@file			clock.c
+@file			clock.h
 @author		Samuel Yamoah
 @date			06.06.2016
-@modified	06.06.2016
-@brief		 Initialising Microprocessor Clock
+@modified	07.06.2016
+@brief		Initialising Microprocessor Clock
 *******************************************************************************/
 #ifndef CLOCK_H_
 #define CLOCK_H_
@@ -31,12 +31,10 @@
 #define SYSTICK_RATE_HZ 1000ul
 #define SAMPLE_RATE_HZ 10000
 
-//******************************************************************************
-// The interrupt handler for the for SysTick interrupt.
-//******************************************************************************
-
+/*The interrupt handler for the for SysTick interrupt.*/
 void SysTickIntHandler(void);
 
+/*Initialisation functions for the clock (incl. SysTick), ADC, display*/
 void initClock (void);
 
 

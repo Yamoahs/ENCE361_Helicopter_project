@@ -2,7 +2,7 @@
 @file			pid_control.c
 @author		Samuel Yamoah
 @date			25.05.2016
-@modified	31.05.2016
+@modified	07.06.2016
 @brief		 A PID Control system that will control the duty cycle of the Tail
  					 and Main Motor Output
 *******************************************************************************/

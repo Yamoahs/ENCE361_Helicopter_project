@@ -2,8 +2,8 @@
 @file			motor.c
 @author		Samuel Yamoah
 @date			06.06.2016
-@modified	06.06.2016
-@brief		 Initialising PWM for the tail and main Motor output
+@modified	07.06.2016
+@brief		Initialising PWM for the tail and main Motor output
 *******************************************************************************/
 #include "inc/hw_memmap.h"
 #include "inc/hw_types.h"
@@ -28,7 +28,7 @@
 
 
 
-
+/*Initialising the pins for motor output*/
 void initMotorPin (void)
 {
     SysCtlPeripheralEnable (SYSCTL_PERIPH_GPIOD);

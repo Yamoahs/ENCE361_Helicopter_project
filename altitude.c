@@ -2,7 +2,7 @@
 @file			altitude.c
 @author		Samuel Yamoah
 @date			06.06.2016
-@modified	06.06.2016
+@modified	07.06.2016
 @brief		 Initialising ADC and height conversion sensor
 *******************************************************************************/
 #include "inc/hw_memmap.h"
@@ -28,7 +28,7 @@
 #include "globals.h"
 
 static circBuf_t g_inBuffer;		// Buffer of size BUF_SIZE integers (sample values)
-//initialRead = 0; 	// Initial voltage read to calibrate the minimum height of the helicopter
+
 
 //******************************************************************************
 // The handler for the ADC conversion (height) complete interrupt.

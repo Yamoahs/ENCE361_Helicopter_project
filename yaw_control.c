@@ -2,9 +2,9 @@
 @file			yaw_control.c
 @author		Samuel Yamoah
 @date			03.06.2016
-@modified	03.06.2016
-@brief		 A Yaw Control system that will control the yaw of the helicopter via
-           the Tail Motor
+@modified	07.06.2016
+@brief		A Yaw Control system that will control the yaw of the helicopter via
+        	the Tail Motor
 *******************************************************************************/
 #include "inc/hw_memmap.h"
 #include "inc/hw_types.h"

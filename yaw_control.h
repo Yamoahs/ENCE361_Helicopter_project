@@ -1,10 +1,10 @@
 /*******************************************************************************
 @file			yaw_control.h
-@author			Samuel Yamoah
+@author		Samuel Yamoah
 @date			05.06.2016
-@modified		03.06.2016
-@brief			A Yaw Control system that will control the yaw of the helicopter
-				via the Tail Motor
+@modified	07.06.2016
+@brief		A Yaw Control system that will control the yaw of the helicopter
+					via the Tail Motor
 *******************************************************************************/
 
 #ifndef YAW_CONTROL_H_
@@ -42,6 +42,9 @@ void yawCalc (int previousState, int currentState, int yaw);
  states (4) * slots on the disc (112).*/
 int yawToDeg (int yaw);
 
+
+/*The interrupt handler for the for the pin change interrupt. Note that
+ the SysTick counter is decrementing.*/
 void YawChangeIntHandler (void);
 
 void initYaw (void);
