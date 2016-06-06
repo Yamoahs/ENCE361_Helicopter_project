@@ -25,7 +25,7 @@
 #include "stdlib.h"
 
 #include "altitude.h"
-#include "stuff.h"
+#include "globals.h"
 
 static circBuf_t g_inBuffer;		// Buffer of size BUF_SIZE integers (sample values)
 //initialRead = 0; 	// Initial voltage read to calibrate the minimum height of the helicopter

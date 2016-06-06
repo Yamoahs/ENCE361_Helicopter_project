@@ -1,12 +1,12 @@
 /*
- * stuff.h
+ * globals.h
  *
  *  Created on: Jun 5, 2016
  *      Author: sya57
  */
 
-#ifndef STUFF_H_
-#define STUFF_H_
+#ifndef GLOBALS_H_
+#define GLOBALS_H_
 
 extern  volatile signed int main_duty;
 extern  volatile signed int tail_duty;
@@ -27,4 +27,4 @@ extern int previousState;
 extern int yaw;
 
 
-#endif /* STUFF_H_ */
+#endif /* GLOBALS_H_ */

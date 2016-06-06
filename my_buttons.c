@@ -27,7 +27,7 @@
 #include "stdlib.h"
 
 #include "my_buttons.h"
-#include "stuff.h"
+#include "globals.h"
 #include "pid_control.h"
 #include "yaw_control.h"
 #include "display.h"

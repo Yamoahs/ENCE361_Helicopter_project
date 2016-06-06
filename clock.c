@@ -24,7 +24,7 @@
 #include "stdio.h"
 #include "stdlib.h"
 
-#include "stuff.h"
+#include "globals.h"
 #include "clock.h"
 
 

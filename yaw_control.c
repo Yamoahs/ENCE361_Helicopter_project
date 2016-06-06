@@ -29,7 +29,7 @@
 #include "pid_control.h"
 #include "yaw_control.h"
 #include "display.h"
-#include "stuff.h"
+#include "globals.h"
 
 
 //******************************************************************************
