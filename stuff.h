@@ -22,5 +22,9 @@ extern volatile signed long altError;
 extern int initialRead; 	// Initial voltage read to calibrate the minimum height of the helicopter
 extern unsigned long g_ulSampCnt;	// Counter for the interrupts
 
+extern int currentState;
+extern int previousState;
+extern int yaw;
+
 
 #endif /* STUFF_H_ */
