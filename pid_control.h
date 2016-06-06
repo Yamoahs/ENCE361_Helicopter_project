@@ -20,6 +20,14 @@
 #include "driverlib/systick.h"
 #include "driverlib/interrupt.h"
 #include "driverlib/debug.h"
+#include "driverlib/uart.h"
+#include "drivers/rit128x96x4.h"
+#include "utils/uartstdio.h"
+#include "utils/ustdlib.h"
+#include "utils/isqrt.h"
+#include "utils/circBuf.h"
+#include "stdio.h"
+#include "stdlib.h"
 
 /*function calculates the PID control from a passed in varaibles hgt_percent and
  dt. YawError, altError, main_duty, tail_duty, desiredYaw & desiredHeight are
