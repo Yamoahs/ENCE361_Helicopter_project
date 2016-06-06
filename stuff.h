@@ -19,6 +19,8 @@ extern unsigned long period;
 extern volatile signed long yawError;
 extern volatile signed long altError;
 
+extern int initialRead; 	// Initial voltage read to calibrate the minimum height of the helicopter
+
 
 
 #endif /* STUFF_H_ */
