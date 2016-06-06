@@ -42,4 +42,9 @@ void yawCalc (int previousState, int currentState, int yaw);
  states (4) * slots on the disc (112).*/
 int yawToDeg (int yaw);
 
+void YawChangeIntHandler (void);
+
+void initYaw (void);
+
+
 #endif /* YAW_CONTROL_H_ */
